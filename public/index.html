@@ -261,21 +261,7 @@
                 <!-- Analysis Tab - Single City Analysis -->
                 <div class="tab-pane fade" id="analysis" role="tabpanel" aria-labelledby="analysis-tab">
                     <div id="cityAnalysisHeader" class="city-analysis-header">
-                        <h3 id="analysisCityName">Select a City for Analysis</h3>
-                    </div>
-                    
-                    <!-- City Selector -->
-                    <div class="row mb-4">
-                        <div class="col-md-6 mx-auto">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title">Choose City</h5>
-                                    <select id="singleCitySelect" class="form-select" onchange="loadSingleCityAnalysis(this.value)">
-                                        <option value="">Select a city to analyze...</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                        <h3 id="analysisCityName">Select a city from the tracker to view analysis</h3>
                     </div>
 
                     <div id="singleCityAnalysisContent" style="display: none;">
@@ -1259,127 +1245,38 @@
             }
         }
         
-        // View city details
+        // View city details - Opens City Analysis tab with selected city
         function viewCityDetails(cityName) {
             const cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
             const city = cities.find(c => c.name === cityName);
             
             if (city) {
-                // Switch to analysis tab and show city details
+                // Switch to analysis tab
                 document.getElementById('analysis-tab').click();
-                document.getElementById('analysisCityName').textContent = city.name;
                 
-                // Show the back button
-                document.getElementById('backToAllBtn').style.display = 'inline-block';
-                
-                // Update health impact card
-                let healthTitle, healthDescription, healthClass;
-                if (city.aqi <= 50) {
-                    healthTitle = "Good - Air quality is satisfactory.";
-                    healthDescription = "Air quality is satisfactory, and air pollution poses little or no risk.";
-                    healthClass = "health-good";
-                } else if (city.aqi <= 100) {
-                    healthTitle = "Moderate - Sensitive people should consider reducing prolonged outdoor exertion.";
-                    healthDescription = "Air quality is acceptable. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution.";
-                    healthClass = "health-moderate";
-                } else if (city.aqi <= 150) {
-                    healthTitle = "Unhealthy for Sensitive Groups - Sensitive individuals should limit outdoor activities.";
-                    healthDescription = "Members of sensitive groups may experience health effects. The general public is less likely to be affected.";
-                    healthClass = "health-unhealthy-sensitive";
-                } else if (city.aqi <= 200) {
-                    healthTitle = "Unhealthy - Everyone may begin to experience health effects.";
+                // Load analysis for this city
+                loadSingleCityAnalysis(cityName);
+            }
+        }
                     healthDescription = "Everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects.";
-                    healthClass = "health-unhealthy";
-                } else if (city.aqi <= 300) {
-                    healthTitle = "Very Unhealthy - Health warnings of emergency conditions.";
-                    healthDescription = "Health warnings of emergency conditions. Everyone is likely to be affected.";
-                    healthClass = "health-very-unhealthy";
-                } else {
-                    healthTitle = "Hazardous - Health alert: everyone may experience serious health effects.";
-                    healthDescription = "Health alert: everyone may experience serious health effects.";
-                    healthClass = "health-hazardous";
-                }
+        // View city details - Opens City Analysis tab with selected city
+        function viewCityDetails(cityName) {
+            const cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
+            const city = cities.find(c => c.name === cityName);
+            
+            if (city) {
+                // Switch to analysis tab
+                document.getElementById('analysis-tab').click();
                 
-                const healthCard = document.getElementById('healthImpactCard');
-                healthCard.className = `health-card ${healthClass}`;
-                document.getElementById('healthTitle').textContent = healthTitle;
-                document.getElementById('healthDescription').textContent = healthDescription;
-                
-                // Show single city pollutants (keep both sections visible)
-                document.getElementById('singleCityPollutants').style.display = 'block';
-                // Keep allCitiesPollutants visible too so users can see overall trends
-                document.getElementById('allCitiesPollutants').style.display = 'block';
-                
-                // Update pollutant chart
-                updateCityPollutantChart(city);
+                // Load analysis for this city
+                loadSingleCityAnalysis(cityName);
             }
         }
         
-        // Update city pollutant chart
-        function updateCityPollutantChart(city) {
-            const ctx = document.getElementById('cityPollutantChart').getContext('2d');
-            
-            // Destroy existing chart if it exists
-            if (window.cityPollutantChartInstance) {
-                window.cityPollutantChartInstance.destroy();
-            }
-            
-            window.cityPollutantChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['PM2.5', 'PM10', 'NO₂', 'SO₂', 'CO', 'O₃'],
-                    datasets: [{
-                        label: 'Concentration (µg/m³)',
-                        data: [city.pm25, city.pm10, city.no2, city.so2, city.co, city.o3],
-                        backgroundColor: [
-                            'rgba(255, 99, 132, 0.6)',
-                            'rgba(54, 162, 235, 0.6)',
-                            'rgba(255, 206, 86, 0.6)',
-                            'rgba(75, 192, 192, 0.6)',
-                            'rgba(153, 102, 255, 0.6)',
-                            'rgba(255, 159, 64, 0.6)'
-                        ],
-                        borderColor: [
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        title: {
-                            display: true,
-                            text: `Pollutant Levels in ${city.name}`
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Concentration (µg/m³)'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-        
-        // Show all cities analysis
+        // Show all cities analysis (no longer needed but kept for compatibility)
         function showAllCitiesAnalysis() {
-            document.getElementById('analysisCityName').textContent = 'City Analysis';
-            document.getElementById('backToAllBtn').style.display = 'none';
-            document.getElementById('singleCityPollutants').style.display = 'none';
-            document.getElementById('allCitiesPollutants').style.display = 'block';
+            // Switch to overall analysis tab instead
+            document.getElementById('overall-tab').click();
         }
         
         // Search map location
@@ -1630,12 +1527,13 @@
                 singleCitySelect.innerHTML = '<option value="">Select a city to analyze...</option>';
                 cities.forEach(city => {
                     const option = document.createElement('option');
-                    option.value = city.name;
-                    option.textContent = city.name;
-                    singleCitySelect.appendChild(option);
-                });
-            }
+        // Populate city selectors
+        function populateCitySelectors() {
+            const cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
+            const city1Select = document.getElementById('city1Select');
+            const city2Select = document.getElementById('city2Select');
             
+            // Only populate city comparison selectors (removed singleCitySelect)
             if (city1Select) {
                 city1Select.innerHTML = '<option value="">Select first city</option>';
                 cities.forEach(city => {
