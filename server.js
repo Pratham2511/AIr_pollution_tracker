@@ -237,6 +237,63 @@ async function connectDatabase() {
     await sequelize.sync({ force: false, alter: false });
     console.log('✅ Database synchronized.');
     
+    // Fix id sequences for all tables (PostgreSQL specific)
+    if (process.env.DATABASE_URL && sequelize.options.dialect === 'postgres') {
+      try {
+        console.log('🔧 Checking and fixing table sequences...');
+        
+        // Fix users table sequence
+        await sequelize.query(`
+          DO $$
+          BEGIN
+            -- Create sequence if it doesn't exist
+            IF NOT EXISTS (SELECT 0 FROM pg_class WHERE relname = 'users_id_seq') THEN
+              CREATE SEQUENCE users_id_seq;
+            END IF;
+            
+            -- Set sequence value to max id + 1
+            PERFORM setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
+            
+            -- Set default value for id column
+            ALTER TABLE users ALTER COLUMN id SET DEFAULT nextval('users_id_seq');
+            
+            -- Set sequence ownership
+            ALTER SEQUENCE users_id_seq OWNED BY users.id;
+          END $$;
+        `);
+        
+        // Fix pollution_readings table sequence
+        await sequelize.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 0 FROM pg_class WHERE relname = 'pollution_readings_id_seq') THEN
+              CREATE SEQUENCE pollution_readings_id_seq;
+            END IF;
+            PERFORM setval('pollution_readings_id_seq', COALESCE((SELECT MAX(id) FROM pollution_readings), 0) + 1, false);
+            ALTER TABLE pollution_readings ALTER COLUMN id SET DEFAULT nextval('pollution_readings_id_seq');
+            ALTER SEQUENCE pollution_readings_id_seq OWNED BY pollution_readings.id;
+          END $$;
+        `);
+        
+        // Fix tracked_cities table sequence
+        await sequelize.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 0 FROM pg_class WHERE relname = 'tracked_cities_id_seq') THEN
+              CREATE SEQUENCE tracked_cities_id_seq;
+            END IF;
+            PERFORM setval('tracked_cities_id_seq', COALESCE((SELECT MAX(id) FROM tracked_cities), 0) + 1, false);
+            ALTER TABLE tracked_cities ALTER COLUMN id SET DEFAULT nextval('tracked_cities_id_seq');
+            ALTER SEQUENCE tracked_cities_id_seq OWNED BY tracked_cities.id;
+          END $$;
+        `);
+        
+        console.log('✅ Database sequences fixed successfully.');
+      } catch (seqError) {
+        console.warn('⚠️  Could not fix sequences (might already be correct):', seqError.message);
+      }
+    }
+    
     dbConnected = true;
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
