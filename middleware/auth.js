@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
 
 const auth = async (req, res, next) => {
   try {
@@ -9,14 +8,16 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Access denied. No token provided.' });
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findByPk(decoded.id);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid token.' });
-    }
+    // Set user info from token (no database lookup needed)
+    req.user = {
+      id: decoded.id,
+      name: decoded.name,
+      email: decoded.email,
+      isAdmin: decoded.isAdmin || false
+    };
     
-    req.user = user;
     next();
   } catch (error) {
     res.status(401).json({ message: 'Invalid token.' });
