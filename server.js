@@ -5,6 +5,9 @@ const { sequelize } = require('./models');
 
 const app = express();
 
+// Trust proxy for production deployment (Render, Heroku, etc.)
+app.set('trust proxy', 1);
+
 // Performance middleware (order matters!)
 app.use(compression()); // Enable gzip compression
 app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
@@ -120,6 +123,11 @@ app.get('/', (req, res) => {
 
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Handle favicon requests to prevent 404 errors
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
 });
 
 // Serve static files from public directory (without index.html)
