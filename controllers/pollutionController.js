@@ -191,3 +191,71 @@ exports.getLatestPollutionByCity = async (req, res) => {
     res.status(500).json({ message: 'Server error fetching latest pollution data' });
   }
 };
+
+// Get all cities (for frontend cities count)
+exports.getCities = async (req, res) => {
+  try {
+    // For now, return the static cities data since we use it in frontend
+    const fs = require('fs');
+    const path = require('path');
+    
+    try {
+      // Try to read cities from the frontend data file
+      const citiesPath = path.join(__dirname, '../public/data/cities.js');
+      if (fs.existsSync(citiesPath)) {
+        const citiesContent = fs.readFileSync(citiesPath, 'utf8');
+        // Extract cities data from the export
+        const citiesMatch = citiesContent.match(/export const indianCitiesData = (\[[\s\S]*?\]);/);
+        if (citiesMatch) {
+          const citiesData = eval(citiesMatch[1]);
+          return res.json(citiesData);
+        }
+      }
+    } catch (error) {
+      console.log('Could not read cities.js file, using fallback data');
+    }
+    
+    // Fallback cities data
+    const fallbackCities = [
+      { name: 'Delhi', lat: 28.6139, lon: 77.2090, aqi: 285, pm25: 125, pm10: 180 },
+      { name: 'Mumbai', lat: 19.0760, lon: 72.8777, aqi: 155, pm25: 65, pm10: 95 },
+      { name: 'Bangalore', lat: 12.9716, lon: 77.5946, aqi: 95, pm25: 40, pm10: 65 }
+    ];
+    
+    res.json(fallbackCities);
+  } catch (error) {
+    console.error('Error fetching cities:', error);
+    res.status(500).json({ message: 'Error fetching cities data' });
+  }
+};
+
+// Get cities count
+exports.getCitiesCount = async (req, res) => {
+  try {
+    // Get cities and return count
+    const fs = require('fs');
+    const path = require('path');
+    
+    try {
+      // Try to read cities from the frontend data file
+      const citiesPath = path.join(__dirname, '../public/data/cities.js');
+      if (fs.existsSync(citiesPath)) {
+        const citiesContent = fs.readFileSync(citiesPath, 'utf8');
+        // Extract cities data from the export
+        const citiesMatch = citiesContent.match(/export const indianCitiesData = (\[[\s\S]*?\]);/);
+        if (citiesMatch) {
+          const citiesData = eval(citiesMatch[1]);
+          return res.json({ count: citiesData.length });
+        }
+      }
+    } catch (error) {
+      console.log('Could not read cities.js file, using fallback count');
+    }
+    
+    // Fallback count
+    res.json({ count: 50 });
+  } catch (error) {
+    console.error('Error getting cities count:', error);
+    res.status(500).json({ message: 'Error getting cities count' });
+  }
+};
