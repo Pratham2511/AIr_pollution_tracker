@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: air-pollution-tracker-backend
+    env: node
+    buildCommand: "touch .rebuild-trigger && npm ci && npm run build"
+    startCommand: "npm start"
+    envVars:
+      - key: NODE_ENV
+        sync: false
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_PORT
+        value: 5432
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRY
+        value: "24h"
+      - key: BCRYPT_SALT_ROUNDS
+        sync: false
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX
+        value: "100"
+      - key: ALLOWED_ORIGINS
+        value: "https://air-pollution-tracker.onrender.com"
+    healthCheckPath: /health
+    autoDeploy: true
