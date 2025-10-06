@@ -1,24 +1,21 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const compression = require('compression');
 const { Sequelize, DataTypes } = require('sequelize');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { guestAuth, restrictGuestFeature } = require('./middleware/guestAuth');
-
-// Load environment variables
-require('dotenv').config();
-
 const app = express();
 
-// Middleware
-app.use(express.json());
+// Performance middleware (order matters!)
+app.use(compression()); // Enable gzip compression
+app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
 
 // Database configuration
 const sequelize = process.env.DATABASE_URL
   ? new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
-      logging: console.log, // Enable logging to see queries
+      logging: false,
       dialectOptions: {
         ssl: {
           require: true,
@@ -26,34 +23,32 @@ const sequelize = process.env.DATABASE_URL
         }
       },
       pool: {
-        max: 10,
-        min: 2,
-        acquire: 60000,
-        idle: 10000,
-        evict: 10000
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
       }
     })
   : new Sequelize(
       process.env.DB_NAME || 'pollutiondb',
       process.env.DB_USER || 'pollutiondb_user',
-      process.env.DB_PASSWORD || 'password',
+      process.env.DB_PASSWORD,
       {
         host: process.env.DB_HOST || 'localhost',
         port: process.env.DB_PORT || 5432,
         dialect: 'postgres',
-        logging: console.log, // Enable logging to see queries
-        dialectOptions: process.env.NODE_ENV === 'production' ? {
+        logging: false,
+        dialectOptions: {
           ssl: {
             require: true,
             rejectUnauthorized: false
           }
-        } : {}, // No SSL for local development
+        },
         pool: {
-          max: 10,
-          min: 2,
-          acquire: 60000,
-          idle: 10000,
-          evict: 10000
+          max: 5,
+          min: 0,
+          acquire: 30000,
+          idle: 10000
         }
       }
     );
@@ -117,79 +112,6 @@ const City = sequelize.define('City', {
     allowNull: false
   }
 });
-
-// TrackedCity Model
-const TrackedCity = sequelize.define('TrackedCity', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'user_id',
-    references: {
-      model: User,
-      key: 'id'
-    },
-    onDelete: 'CASCADE'
-  },
-  cityName: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    field: 'city_name'
-  },
-  latitude: {
-    type: DataTypes.FLOAT,
-    allowNull: false
-  },
-  longitude: {
-    type: DataTypes.FLOAT,
-    allowNull: false
-  },
-  aqi: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  pm25: {
-    type: DataTypes.FLOAT,
-    allowNull: true
-  },
-  pm10: {
-    type: DataTypes.FLOAT,
-    allowNull: true
-  },
-  no2: {
-    type: DataTypes.FLOAT,
-    allowNull: true
-  },
-  so2: {
-    type: DataTypes.FLOAT,
-    allowNull: true
-  },
-  co: {
-    type: DataTypes.FLOAT,
-    allowNull: true
-  },
-  o3: {
-    type: DataTypes.FLOAT,
-    allowNull: true
-  }
-}, {
-  tableName: 'tracked_cities',
-  timestamps: true,
-  indexes: [
-    {
-      unique: true,
-      fields: ['user_id', 'city_name']
-    }
-  ]
-});
-
-// Model associations
-User.hasMany(TrackedCity, { foreignKey: 'userId', as: 'trackedCities' });
-TrackedCity.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -296,26 +218,6 @@ app.get('/api/cities/count', async (req, res) => {
 app.get('/api/cities', authenticateToken, async (req, res) => {
   try {
     const cities = await City.findAll();
-    
-    // If user is a guest, return limited data
-    if (req.user.isGuest) {
-      const limitedCities = cities.slice(0, 10).map(city => ({
-        name: city.name,
-        lat: city.lat,
-        lon: city.lon,
-        aqi: city.aqi,
-        pm25: city.pm25,
-        pm10: city.pm10
-      }));
-      
-      return res.json({
-        cities: limitedCities,
-        isGuest: true,
-        message: 'Guest users can view limited city data. Register for full access.'
-      });
-    }
-    
-    // Return full data for authenticated users
     res.json(cities);
   } catch (error) {
     console.error('Error getting cities:', error);
@@ -459,293 +361,6 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ message: 'Logout successful' });
 });
 
-// ==================== Guest User Routes ====================
-
-// Get random city data for guest users (limited data)
-app.get('/api/guest/random-city', guestAuth, async (req, res) => {
-  try {
-    // Get a random city from the database
-    const count = await City.count();
-    const random = Math.floor(Math.random() * count);
-    const city = await City.findOne({ offset: random });
-    
-    if (!city) {
-      return res.status(404).json({
-        success: false,
-        message: 'No cities available'
-      });
-    }
-    
-    // Return limited data for guest users - basic air quality data only
-    res.json({
-      success: true,
-      city: {
-        name: city.name,
-        lat: city.lat,
-        lon: city.lon,
-        aqi: city.aqi,
-        pm25: city.pm25,
-        pm10: city.pm10,
-        // Don't send detailed pollutant data to guests
-        lastUpdated: city.updatedAt
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching random city for guest:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch city data',
-      error: 'SERVER_ERROR'
-    });
-  }
-});
-
-// Get multiple random cities for guest users
-app.get('/api/guest/cities', guestAuth, async (req, res) => {
-  try {
-    const limit = Math.min(parseInt(req.query.limit) || 5, 5); // Max 5 cities for guests
-    
-    // Get random cities
-    const cities = await City.findAll({
-      order: Sequelize.literal('random()'),
-      limit: limit
-    });
-    
-    // Return limited data for guest users
-    const limitedCities = cities.map(city => ({
-      name: city.name,
-      lat: city.lat,
-      lon: city.lon,
-      aqi: city.aqi,
-      pm25: city.pm25,
-      pm10: city.pm10,
-      lastUpdated: city.updatedAt
-    }));
-    
-    res.json({
-      success: true,
-      cities: limitedCities,
-      isGuest: true,
-      message: 'Guest users can view up to 5 random cities. Register to track specific cities.'
-    });
-  } catch (error) {
-    console.error('Error fetching cities for guest:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch cities',
-      error: 'SERVER_ERROR'
-    });
-  }
-});
-
-// ==================== Tracked Cities Routes ====================
-
-// Get all tracked cities for authenticated user
-app.get('/api/cities/tracked', authenticateToken, async (req, res) => {
-  try {
-    // Check if user is a guest
-    if (req.user.isGuest) {
-      return res.status(403).json({
-        success: false,
-        message: 'Guest users cannot track specific cities. Please register to use this feature.',
-        error: 'GUEST_RESTRICTION'
-      });
-    }
-    
-    const userId = req.user.id;
-    
-    const trackedCities = await TrackedCity.findAll({
-      where: { userId },
-      order: [['createdAt', 'ASC']]
-    });
-    
-    res.json({
-      success: true,
-      cities: trackedCities
-    });
-  } catch (error) {
-    console.error('Error fetching tracked cities:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Failed to fetch tracked cities',
-      error: 'SERVER_ERROR'
-    });
-  }
-});
-
-// Add a city to user's tracked list
-app.post('/api/cities/track', authenticateToken, restrictGuestFeature, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { cityName, latitude, longitude, aqi, pm25, pm10, no2, so2, co, o3 } = req.body;
-    
-    // Validation
-    if (!cityName || !latitude || !longitude) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'City name, latitude, and longitude are required'
-      });
-    }
-    
-    // Check if city already tracked by this user
-    const existingCity = await TrackedCity.findOne({
-      where: { 
-        userId,
-        cityName 
-      }
-    });
-    
-    if (existingCity) {
-      // Update existing city data
-      await existingCity.update({
-        latitude,
-        longitude,
-        aqi,
-        pm25,
-        pm10,
-        no2,
-        so2,
-        co,
-        o3
-      });
-      
-      return res.json({
-        success: true,
-        message: 'City data updated successfully',
-        city: existingCity
-      });
-    }
-    
-    // Create new tracked city
-    const trackedCity = await TrackedCity.create({
-      userId,
-      cityName,
-      latitude,
-      longitude,
-      aqi,
-      pm25,
-      pm10,
-      no2,
-      so2,
-      co,
-      o3
-    });
-    
-    res.status(201).json({
-      success: true,
-      message: 'City added to tracking list',
-      city: trackedCity
-    });
-  } catch (error) {
-    console.error('Error tracking city:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Failed to add city to tracking list',
-      error: 'SERVER_ERROR'
-    });
-  }
-});
-
-// Remove a city from user's tracked list
-app.delete('/api/cities/untrack/:cityName', authenticateToken, restrictGuestFeature, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { cityName } = req.params;
-    
-    const deleted = await TrackedCity.destroy({
-      where: { 
-        userId,
-        cityName 
-      }
-    });
-    
-    if (deleted === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'City not found in tracking list'
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'City removed from tracking list'
-    });
-  } catch (error) {
-    console.error('Error untracking city:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Failed to remove city from tracking list',
-      error: 'SERVER_ERROR'
-    });
-  }
-});
-
-// Update all tracked cities data (for refresh functionality)
-app.put('/api/cities/tracked/refresh', authenticateToken, restrictGuestFeature, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { cities } = req.body;
-    
-    if (!Array.isArray(cities)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cities must be an array'
-      });
-    }
-    
-    // Update each city
-    const updatePromises = cities.map(city => {
-      return TrackedCity.update(
-        {
-          aqi: city.aqi,
-          pm25: city.pm25,
-          pm10: city.pm10,
-          no2: city.no2,
-          so2: city.so2,
-          co: city.co,
-          o3: city.o3
-        },
-        {
-          where: {
-            userId,
-            cityName: city.name
-          }
-        }
-      );
-    });
-    
-    await Promise.all(updatePromises);
-    
-    res.json({
-      success: true,
-      message: 'All tracked cities updated successfully'
-    });
-  } catch (error) {
-    console.error('Error refreshing tracked cities:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to refresh tracked cities',
-      error: 'SERVER_ERROR'
-    });
-  }
-});
-
-// ==================== End Tracked Cities Routes ====================
-
-// Health check endpoint for Render
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-
-// Ping endpoint to keep service alive
-app.get('/ping', (req, res) => {
-  res.status(200).send('pong');
-});
-
 // Serve static files from public directory (without index.html)
 app.use(express.static(path.join(__dirname, 'public'), { 
   index: false,
@@ -770,15 +385,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 
 // Set timeouts to prevent 502 errors
 server.keepAliveTimeout = 120000; // 120 seconds
-server.headersTimeout = 125000; // 125 seconds (slightly higher than keepAliveTimeout)
-server.timeout = 120000; // 120 seconds
-
-// Add request timeout middleware
-app.use((req, res, next) => {
-  req.setTimeout(115000); // 115 seconds
-  res.setTimeout(115000);
-  next();
-});
+server.headersTimeout = 120000; // 120 seconds
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
@@ -805,32 +412,15 @@ process.on('unhandledRejection', (reason, promise) => {
 // Database connection in background
 async function connectDatabase() {
   try {
-    console.log('🔄 Attempting to connect to database...');
-    console.log('📍 Connection details:', {
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'pollutiondb',
-      user: process.env.DB_USER || 'pollutiondb_user',
-      hasUrl: !!process.env.DATABASE_URL,
-      environment: process.env.NODE_ENV || 'development'
-    });
-    
     // Test database connection
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully.');
     
     // Sync database
-    await sequelize.sync({ force: false, alter: false });
+    await sequelize.sync({ force: false });
     console.log('✅ Database synchronized.');
-    console.log('📊 Models synced:', Object.keys(sequelize.models));
   } catch (error) {
-    console.error('❌ Database connection failed:');
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    if (error.parent) {
-      console.error('Parent error:', error.parent.message);
-      console.error('Error code:', error.parent.code);
-    }
+    console.error('❌ Database connection failed:', error.message);
     console.log('🔄 Retrying in 10 seconds...');
     setTimeout(connectDatabase, 10000);
   }

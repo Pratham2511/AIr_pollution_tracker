@@ -3,8 +3,16 @@
   "version": "1.0.0",
   "description": "Air pollution tracking application",
   "main": "server.js",
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  },
   "scripts": {
-    "start": "node server.js"
+    "start": "NODE_ENV=production node server.js",
+    "build": "echo 'Build complete - static files ready'",
+    "dev": "nodemon server.js",
+    "migrate": "npx sequelize-cli db:migrate",
+    "seed": "npx sequelize-cli db:seed:all"
   },
   "dependencies": {
     "express": "^4.18.2",
