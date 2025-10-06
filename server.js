@@ -7,11 +7,17 @@ const { sequelize } = require('./models');
 if (!process.env.JWT_SECRET) {
   console.warn('⚠️  WARNING: JWT_SECRET not set! Using default (INSECURE for production)');
   process.env.JWT_SECRET = 'default-jwt-secret-please-change-in-production';
+} else {
+  console.log('✅ JWT_SECRET is configured');
 }
 
 if (!process.env.DATABASE_URL) {
   console.warn('⚠️  WARNING: DATABASE_URL not set! Using local database configuration');
+} else {
+  console.log('✅ DATABASE_URL is configured');
 }
+
+console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
 const app = express();
 
