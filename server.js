@@ -36,14 +36,36 @@ const configuredOrigins = (process.env.ALLOWED_ORIGINS || '')
   .filter(Boolean);
 
 const defaultOrigins = ['http://localhost:3000', 'http://localhost:5173'];
-const allowedOrigins = configuredOrigins.length ? configuredOrigins : defaultOrigins;
+const renderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  ? process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '')
+  : null;
+
+const normalizeOrigin = (origin) => origin.replace(/\/$/, '');
+const allowedOriginsSet = new Set(defaultOrigins.map(normalizeOrigin));
+
+configuredOrigins
+  .map(normalizeOrigin)
+  .forEach(origin => allowedOriginsSet.add(origin));
+
+if (renderExternalUrl) {
+  allowedOriginsSet.add(renderExternalUrl);
+}
+
+const allowedOrigins = Array.from(allowedOriginsSet);
+
+console.log('🔐 Allowed CORS origins:', allowedOrigins);
 
 app.use(cors({
   origin(origin, callback) {
-    // Allow same-origin or tools (e.g., curl/Postman) with no origin
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
       return callback(null, true);
     }
+
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (allowedOriginsSet.has(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
     console.warn(`❌ Blocked CORS origin: ${origin}`);
     return callback(new Error('Not allowed by CORS'));
   },
@@ -51,6 +73,13 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+app.use((err, req, res, next) => {
+  if (err && err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ message: 'Origin not allowed by CORS policy' });
+  }
+  return next(err);
+});
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
