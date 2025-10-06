@@ -5,6 +5,10 @@ const { Sequelize, DataTypes } = require('sequelize');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { guestAuth, restrictGuestFeature } = require('./middleware/guestAuth');
+
+// Load environment variables
+require('dotenv').config();
+
 const app = express();
 
 // Middleware
@@ -14,7 +18,7 @@ app.use(express.json());
 const sequelize = process.env.DATABASE_URL
   ? new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
-      logging: false,
+      logging: console.log, // Enable logging to see queries
       dialectOptions: {
         ssl: {
           require: true,
@@ -32,18 +36,18 @@ const sequelize = process.env.DATABASE_URL
   : new Sequelize(
       process.env.DB_NAME || 'pollutiondb',
       process.env.DB_USER || 'pollutiondb_user',
-      process.env.DB_PASSWORD,
+      process.env.DB_PASSWORD || 'password',
       {
         host: process.env.DB_HOST || 'localhost',
         port: process.env.DB_PORT || 5432,
         dialect: 'postgres',
-        logging: false,
-        dialectOptions: {
+        logging: console.log, // Enable logging to see queries
+        dialectOptions: process.env.NODE_ENV === 'production' ? {
           ssl: {
             require: true,
             rejectUnauthorized: false
           }
-        },
+        } : {}, // No SSL for local development
         pool: {
           max: 10,
           min: 2,
@@ -801,15 +805,32 @@ process.on('unhandledRejection', (reason, promise) => {
 // Database connection in background
 async function connectDatabase() {
   try {
+    console.log('🔄 Attempting to connect to database...');
+    console.log('📍 Connection details:', {
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      database: process.env.DB_NAME || 'pollutiondb',
+      user: process.env.DB_USER || 'pollutiondb_user',
+      hasUrl: !!process.env.DATABASE_URL,
+      environment: process.env.NODE_ENV || 'development'
+    });
+    
     // Test database connection
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully.');
     
     // Sync database
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ force: false, alter: false });
     console.log('✅ Database synchronized.');
+    console.log('📊 Models synced:', Object.keys(sequelize.models));
   } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
+    console.error('❌ Database connection failed:');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    if (error.parent) {
+      console.error('Parent error:', error.parent.message);
+      console.error('Error code:', error.parent.code);
+    }
     console.log('🔄 Retrying in 10 seconds...');
     setTimeout(connectDatabase, 10000);
   }
