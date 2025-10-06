@@ -35,10 +35,10 @@
     <a href="#mainTabs" class="visually-hidden-focusable">Skip to main content</a>
 
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="z-index: 1030;">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="#" style="gap: 12px;">
-                <img src="Websitelogo.jpeg" alt="Airlytics Logo" class="navbar-logo" style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"> 
+                <img src="Websitelogo.jpeg" alt="Airlytics Logo" class="navbar-logo" style="width: 65px; height: 65px; border-radius: 50%; object-fit: cover; background: transparent; box-shadow: 0 4px 16px rgba(0,0,0,0.4);"> 
                 <div>
                     <div class="brand-name" style="font-family: 'Playfair Display', 'Georgia', serif; font-size: 1.8rem; font-weight: 700; color: #fff; letter-spacing: 1px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">AIRLYTICS</div>
                     <small style="color: rgba(255, 255, 255, 0.85); font-size: 0.75rem; font-weight: 500; letter-spacing: 2px; text-transform: uppercase;">Air Quality Monitor</small>
@@ -66,6 +66,41 @@
             </div>
         </div>
     </nav>
+
+    <!-- Guest Limitations Popup (Left Side) -->
+    <div id="guestLimitationsPopup" style="display: none; position: fixed; top: 80px; left: 20px; z-index: 1025; max-width: 350px;">
+        <div class="card border-warning shadow-lg">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> Guest Access Limitations</h6>
+                <button type="button" class="btn-close btn-close-dark" onclick="document.getElementById('guestLimitationsPopup').style.display='none'"></button>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2"><span class="text-danger">❌</span> Cannot add custom cities from the map</li>
+                    <li class="mb-2"><span class="text-danger">❌</span> Limited to viewing random city data only</li>
+                    <li class="mb-2"><span class="text-danger">❌</span> Cannot access detailed city analysis</li>
+                    <li class="mb-2"><span class="text-success">✅</span> Can view basic air quality data</li>
+                    <li class="mb-0"><span class="text-success">✅</span> Access to health recommendations</li>
+                </ul>
+                <a href="/" class="btn btn-warning btn-sm w-100 mt-3">
+                    <i class="bi bi-person-plus"></i> Register for Full Access
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add padding to body to account for fixed navbar -->
+    <style>
+        body {
+            padding-top: 76px; /* Height of fixed navbar */
+        }
+        .navbar-logo {
+            transition: transform 0.3s ease;
+        }
+        .navbar-logo:hover {
+            transform: scale(1.1);
+        }
+    </style>
 
     <!-- Hero Section -->
 <section class="hero-section">
@@ -977,23 +1012,13 @@
             const citiesContainer = document.getElementById('pollutionCards');
             let cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
             
-            // Initialize with default cities if none exist
-            if (cities.length === 0 && citiesData && citiesData.length > 0) {
-                // Add Delhi, Mumbai, Bangalore, and Kolkata as default cities
-                const defaultCityNames = ['Delhi', 'Mumbai', 'Bangalore', 'Kolkata'];
-                cities = citiesData.filter(city => defaultCityNames.includes(city.name));
-                if (cities.length > 0) {
-                    localStorage.setItem('trackedCities', JSON.stringify(cities));
-                }
-            }
-            
             // Update user tracked cities count
             updateUserTrackedCitiesCount(cities.length);
             
             citiesContainer.innerHTML = '';
             
             if (cities.length === 0) {
-                citiesContainer.innerHTML = '<p class="text-center text-muted">No cities tracked yet. Click on the map to add cities.</p>';
+                citiesContainer.innerHTML = '<p class="text-center text-muted">No cities tracked yet. Click "Add Random City" to start tracking.</p>';
                 return;
             }
             

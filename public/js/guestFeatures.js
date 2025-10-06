@@ -225,12 +225,15 @@ function getAQILevel(aqi) {
 
 // 4. Add visual indicators
 function addGuestBadge() {
-  const navbarBrand = document.querySelector('.navbar-brand');
-  if (navbarBrand && !document.querySelector('.guest-badge')) {
-    const guestBadge = document.createElement('span');
-    guestBadge.className = 'badge bg-warning text-dark ms-2 guest-badge';
-    guestBadge.textContent = '👤 Guest Mode';
-    navbarBrand.appendChild(guestBadge);
+  // Show the guest limitations popup instead of badge in navbar
+  const popup = document.getElementById('guestLimitationsPopup');
+  if (popup) {
+    popup.style.display = 'block';
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+      popup.style.display = 'none';
+    }, 10000);
   }
 
   // Add guest class to body
@@ -238,35 +241,9 @@ function addGuestBadge() {
 }
 
 function addUpgradePrompt() {
-  const heroSection = document.querySelector('.hero-section') || document.querySelector('.container');
-  if (heroSection && !document.querySelector('.guest-upgrade-prompt')) {
-    const upgradePrompt = document.createElement('div');
-    upgradePrompt.className = 'alert alert-warning alert-dismissible fade show mb-3 guest-upgrade-prompt';
-    upgradePrompt.innerHTML = `
-      <div class="d-flex align-items-center">
-        <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
-        <div class="flex-grow-1">
-          <h6 class="alert-heading mb-1">Guest Access Limitations</h6>
-          <ul class="mb-2 small">
-            <li>❌ Cannot add custom cities from the map</li>
-            <li>❌ Limited to viewing random city data only</li>
-            <li>❌ Cannot access detailed city analysis</li>
-            <li>✅ Can view basic air quality data</li>
-            <li>✅ Access to health recommendations</li>
-          </ul>
-          <a href="/" class="btn btn-sm btn-primary">
-            <i class="bi bi-person-plus"></i> Register Now for Full Access
-          </a>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    `;
-    
-    const container = document.querySelector('.container');
-    if (container && container.firstChild) {
-      container.insertBefore(upgradePrompt, container.firstChild);
-    }
-  }
+  // Don't show the inline upgrade prompt anymore since we have the popup
+  // This function is now just a placeholder
+  console.log('Guest limitations popup shown');
 }
 
 // Show modal explaining restriction

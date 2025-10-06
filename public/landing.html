@@ -34,14 +34,21 @@
         localStorage.removeItem('user');
         localStorage.removeItem('userType');
     </script>
+    
+    <style>
+        /* Add padding to body for fixed navbar */
+        body {
+            padding-top: 76px;
+        }
+    </style>
 </head>
 <body>
     <div class="content-wrapper">
-        <!-- Navigation - Modern Design -->
-        <nav class="navbar navbar-expand-lg navbar-dark" role="navigation" aria-label="Main navigation">
+        <!-- Navigation - Modern Design with Fixed Position -->
+        <nav class="navbar navbar-expand-lg navbar-dark fixed-top" role="navigation" aria-label="Main navigation">
             <div class="container">
                 <a class="navbar-brand d-flex align-items-center" href="#" aria-label="Airlytics Home" style="gap: 12px;">
-                    <img src="Websitelogo.jpeg" alt="Airlytics Logo" class="navbar-logo" style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.4);"> 
+                    <img src="Websitelogo.jpeg" alt="Airlytics Logo" class="navbar-logo" style="width: 65px; height: 65px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.4);"> 
                     <div>
                         <div class="brand-name" style="font-family: 'Playfair Display', 'Georgia', serif; font-size: 1.8rem; font-weight: 700; color: #fff; letter-spacing: 1px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">AIRLYTICS</div>
                         <small style="color: rgba(255, 255, 255, 0.9); font-size: 0.75rem; font-weight: 500; letter-spacing: 2px; text-transform: uppercase;">Air Quality Monitor</small>
