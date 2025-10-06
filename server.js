@@ -3,6 +3,16 @@ const path = require('path');
 const compression = require('compression');
 const { sequelize } = require('./models');
 
+// Validate critical environment variables
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  WARNING: JWT_SECRET not set! Using default (INSECURE for production)');
+  process.env.JWT_SECRET = 'default-jwt-secret-please-change-in-production';
+}
+
+if (!process.env.DATABASE_URL) {
+  console.warn('⚠️  WARNING: DATABASE_URL not set! Using local database configuration');
+}
+
 const app = express();
 
 // Trust proxy for production deployment (Render, Heroku, etc.)
