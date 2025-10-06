@@ -22,10 +22,11 @@ const sequelize = process.env.DATABASE_URL
         }
       },
       pool: {
-        max: 5,
-        min: 0,
-        acquire: 30000,
-        idle: 10000
+        max: 10,
+        min: 2,
+        acquire: 60000,
+        idle: 10000,
+        evict: 10000
       }
     })
   : new Sequelize(
@@ -44,10 +45,11 @@ const sequelize = process.env.DATABASE_URL
           }
         },
         pool: {
-          max: 5,
-          min: 0,
-          acquire: 30000,
-          idle: 10000
+          max: 10,
+          min: 2,
+          acquire: 60000,
+          idle: 10000,
+          evict: 10000
         }
       }
     );
@@ -726,6 +728,20 @@ app.put('/api/cities/tracked/refresh', authenticateToken, restrictGuestFeature, 
 
 // ==================== End Tracked Cities Routes ====================
 
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// Ping endpoint to keep service alive
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
 // Serve static files from public directory (without index.html)
 app.use(express.static(path.join(__dirname, 'public'), { 
   index: false,
@@ -750,7 +766,15 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 
 // Set timeouts to prevent 502 errors
 server.keepAliveTimeout = 120000; // 120 seconds
-server.headersTimeout = 120000; // 120 seconds
+server.headersTimeout = 125000; // 125 seconds (slightly higher than keepAliveTimeout)
+server.timeout = 120000; // 120 seconds
+
+// Add request timeout middleware
+app.use((req, res, next) => {
+  req.setTimeout(115000); // 115 seconds
+  res.setTimeout(115000);
+  next();
+});
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
