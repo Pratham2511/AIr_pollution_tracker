@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Page - Air Pollution Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-ok { background: #4CAF50; color: white; }
+        .status-error { background: #f44336; color: white; }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Air Pollution Tracker - API Test Page</h1>
+    <p>This page tests all API endpoints to help debug issues.</p>
+
+    <div class="test-section">
+        <h2>1. Health Check</h2>
+        <button onclick="testHealth()">Test /health</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Cities Count</h2>
+        <button onclick="testCitiesCount()">Test /api/cities/count</button>
+        <div id="count-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Cities Data</h2>
+        <button onclick="testCities()">Test /api/cities</button>
+        <div id="cities-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Pollution Cities</h2>
+        <button onclick="testPollutionCities()">Test /api/pollution/cities</button>
+        <div id="pollution-cities-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Refresh Data</h2>
+        <button onclick="testRefreshData()">Test POST /api/refresh-data</button>
+        <div id="refresh-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Test All APIs</h2>
+        <button onclick="testAll()">Run All Tests</button>
+    </div>
+
+    <script>
+        async function testEndpoint(url, method = 'GET', elementId, description) {
+            const resultDiv = document.getElementById(elementId);
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(url, { method });
+                const duration = Date.now() - startTime;
+                
+                let data;
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    data = await response.text();
+                }
+                
+                const statusClass = response.ok ? 'status-ok' : 'status-error';
+                const resultClass = response.ok ? 'result' : 'result error';
+                
+                let dataPreview = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+                if (dataPreview.length > 2000) {
+                    const parsed = typeof data === 'object' ? data : JSON.parse(data);
+                    if (Array.isArray(parsed)) {
+                        dataPreview = `Array with ${parsed.length} items. First 3 items:\n${JSON.stringify(parsed.slice(0, 3), null, 2)}`;
+                    } else {
+                        dataPreview = dataPreview.substring(0, 2000) + '\n... (truncated)';
+                    }
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="${resultClass}">
+                        <strong>${description || url}</strong>
+                        <span class="${statusClass}">${response.status} ${response.statusText}</span>
+                        <br><small>Response time: ${duration}ms</small>
+                        <pre>${dataPreview}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>${description || url}</strong>
+                        <span class="status-error">ERROR</span>
+                        <pre>${error.message}\n\n${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        function testHealth() {
+            testEndpoint('/health', 'GET', 'health-result', 'Health Check');
+        }
+
+        function testCitiesCount() {
+            testEndpoint('/api/cities/count', 'GET', 'count-result', 'Cities Count');
+        }
+
+        function testCities() {
+            testEndpoint('/api/cities', 'GET', 'cities-result', 'Cities Data');
+        }
+
+        function testPollutionCities() {
+            testEndpoint('/api/pollution/cities', 'GET', 'pollution-cities-result', 'Pollution Cities');
+        }
+
+        function testRefreshData() {
+            testEndpoint('/api/refresh-data', 'POST', 'refresh-result', 'Refresh Data');
+        }
+
+        async function testAll() {
+            console.log('Running all tests...');
+            testHealth();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            testCitiesCount();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            testCities();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            testPollutionCities();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            testRefreshData();
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            console.log('Page loaded - Auto-running tests...');
+            setTimeout(testAll, 1000);
+        });
+    </script>
+</body>
+</html>
