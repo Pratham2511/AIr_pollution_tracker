@@ -183,7 +183,12 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="analysis-tab" data-bs-toggle="tab" data-bs-target="#analysis" type="button" role="tab" aria-controls="analysis" aria-selected="false">
-                        <i class="bi bi-graph-up me-2"></i>Analysis
+                        <i class="bi bi-graph-up me-2"></i>City Analysis
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="overall-tab" data-bs-toggle="tab" data-bs-target="#overallAnalysis" type="button" role="tab" aria-controls="overallAnalysis" aria-selected="false">
+                        <i class="bi bi-bar-chart me-2"></i>Overall Analysis
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -244,8 +249,8 @@
                                             <i class="bi bi-search"></i>
                                         </button>
                                     </div>
-                                    <div class="mt-2">
-                                        <small class="text-muted" style="font-size: 0.75rem;">Click on map to add city</small>
+                                    <div id="searchResult" class="mt-2" style="display: none;">
+                                        <!-- Search result will appear here -->
                                     </div>
                                 </div>
                             </div>
@@ -253,97 +258,188 @@
                     </div>
                 </div>
 
-                <!-- Analysis Tab -->
+                <!-- Analysis Tab - Single City Analysis -->
                 <div class="tab-pane fade" id="analysis" role="tabpanel" aria-labelledby="analysis-tab">
                     <div id="cityAnalysisHeader" class="city-analysis-header">
-                        <h3 id="analysisCityName">City Analysis</h3>
-                        <button id="backToAllBtn" class="back-to-all-btn" onclick="showAllCitiesAnalysis()" style="display: none;">← Back to All Cities</button>
+                        <h3 id="analysisCityName">Select a City for Analysis</h3>
                     </div>
                     
-                    <!-- Health Impact Indicators -->
+                    <!-- City Selector -->
                     <div class="row mb-4">
-                        <div class="col-12">
-                            <h4 class="mb-3">Health Impact Indicators</h4>
-                            <div id="healthImpactCard" class="health-card health-moderate">
-                                <h5 id="healthTitle">Today's air is Moderate - Sensitive people should consider reducing prolonged outdoor exertion.</h5>
-                                <p id="healthDescription">Air quality is acceptable for most people. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Forecast / Prediction -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h4 class="mb-3">3-Day Weather Forecast</h4>
+                        <div class="col-md-6 mx-auto">
                             <div class="card">
                                 <div class="card-body">
-                                    <div class="row" id="forecastContainer">
-                                        <!-- Forecast cards will be populated by JavaScript -->
-                                    </div>
-                                    <div id="forecastChartContainer" class="chart-container mt-3">
-                                        <canvas id="forecastChart"></canvas>
-                                    </div>
+                                    <h5 class="card-title">Choose City</h5>
+                                    <select id="singleCitySelect" class="form-select" onchange="loadSingleCityAnalysis(this.value)">
+                                        <option value="">Select a city to analyze...</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Detailed Pollutant Insights -->
+                    <div id="singleCityAnalysisContent" style="display: none;">
+                        <!-- Health Impact Indicators -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Health Impact Indicators</h4>
+                                <div id="healthImpactCard" class="health-card health-moderate">
+                                    <h5 id="healthTitle">Today's air is Moderate - Sensitive people should consider reducing prolonged outdoor exertion.</h5>
+                                    <p id="healthDescription">Air quality is acceptable for most people. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3-Day Forecast for Selected City -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">3-Day Forecast for <span id="forecastCityName"></span></h4>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row" id="forecastContainer">
+                                            <!-- Forecast cards will be populated by JavaScript -->
+                                        </div>
+                                        <div id="forecastChartContainer" class="chart-container mt-3">
+                                            <canvas id="forecastChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Single City Pollutant Insights -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Pollutant Breakdown</h4>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5>Pollutant Concentration</h5>
+                                        <div class="chart-container">
+                                            <canvas id="cityPollutantChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Environmental Data for Selected City -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4 class="mb-3">Environmental Data</h4>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Current Weather Conditions</h5>
+                                                <div class="weather-card">
+                                                    <i class="bi bi-thermometer-half weather-icon text-danger"></i>
+                                                    <div>
+                                                        <h6>Temperature</h6>
+                                                        <p id="temperature">--°C</p>
+                                                    </div>
+                                                </div>
+                                                <div class="weather-card">
+                                                    <i class="bi bi-droplet weather-icon text-primary"></i>
+                                                    <div>
+                                                        <h6>Humidity</h6>
+                                                        <p id="humidity">--%</p>
+                                                    </div>
+                                                </div>
+                                                <div class="weather-card">
+                                                    <i class="bi bi-wind weather-icon text-success"></i>
+                                                    <div>
+                                                        <h6>Wind Speed</h6>
+                                                        <p id="windSpeed">-- km/h</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Historical Timeline</h5>
+                                                <input type="range" class="form-range timeline-slider" id="timelineSlider" min="1" max="12" value="6">
+                                                <div class="d-flex justify-content-between small">
+                                                    <span>Jan</span>
+                                                    <span>Jun</span>
+                                                    <span>Dec</span>
+                                                </div>
+                                                <div class="chart-container mt-3">
+                                                    <canvas id="timelineChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overall Analysis Tab - All Cities Comparison -->
+                <div class="tab-pane fade" id="overallAnalysis" role="tabpanel" aria-labelledby="overall-tab">
+                    <h3 class="mb-4">Overall Analysis - All Tracked Cities</h3>
+                    
+                    <!-- Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div id="mostPollutedCard" class="highlight-box most-polluted">
+                                <h5>Most Polluted City Today</h5>
+                                <h3 id="mostPollutedCity">--</h3>
+                                <p>AQI: <span id="mostPollutedAQI">--</span></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="leastPollutedCard" class="highlight-box least-polluted">
+                                <h5>Least Polluted City Today</h5>
+                                <h3 id="leastPollutedCity">--</h3>
+                                <p>AQI: <span id="leastPollutedAQI">--</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- All Cities Pollutant Trends -->
                     <div class="row mb-4">
                         <div class="col-12">
-                            <h4 class="mb-3">Detailed Pollutant Insights</h4>
-                            <div id="pollutantInsightsContainer">
-                                <div id="singleCityPollutants" style="display: none;">
+                            <h4 class="mb-3">Pollutant Trends Across Cities</h4>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
                                     <div class="card">
                                         <div class="card-body">
-                                            <h5>Pollutant Concentration</h5>
-                                            <div class="chart-container">
-                                                <canvas id="cityPollutantChart"></canvas>
+                                            <h6>PM2.5 Trends</h6>
+                                            <div class="mini-chart-container">
+                                                <canvas id="pm25Chart"></canvas>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div id="allCitiesPollutants">
-                                    <h5 class="mt-4 mb-3" style="color: #4B0082; font-weight: 700;">All Tracked Cities - Pollutant Trends</h5>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h6>PM2.5 Trends</h6>
-                                                    <div class="mini-chart-container">
-                                                        <canvas id="pm25Chart"></canvas>
-                                                    </div>
-                                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6>PM10 Trends</h6>
+                                            <div class="mini-chart-container">
+                                                <canvas id="pm10Chart"></canvas>
                                             </div>
                                         </div>
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h6>PM10 Trends</h6>
-                                                    <div class="mini-chart-container">
-                                                        <canvas id="pm10Chart"></canvas>
-                                                    </div>
-                                                </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6>NO₂ Trends</h6>
+                                            <div class="mini-chart-container">
+                                                <canvas id="no2Chart"></canvas>
                                             </div>
                                         </div>
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h6>NO₂ Trends</h6>
-                                                    <div class="mini-chart-container">
-                                                        <canvas id="no2Chart"></canvas>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h6>O₃ Trends</h6>
-                                                    <div class="mini-chart-container">
-                                                        <canvas id="o3Chart"></canvas>
-                                                    </div>
-                                                </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6>O₃ Trends</h6>
+                                            <div class="mini-chart-container">
+                                                <canvas id="o3Chart"></canvas>
                                             </div>
                                         </div>
                                     </div>
@@ -352,10 +448,10 @@
                         </div>
                     </div>
 
-                    <!-- City Comparison Enhancements -->
+                    <!-- City Comparison -->
                     <div class="row mb-4">
                         <div class="col-12">
-                            <h4 class="mb-3">City Comparison</h4>
+                            <h4 class="mb-3">Compare Cities</h4>
                             <div class="card mb-3">
                                 <div class="card-body">
                                     <div class="row mb-3">
@@ -378,127 +474,48 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div id="mostPollutedCard" class="highlight-box most-polluted">
-                                        <h5>Most Polluted City Today</h5>
-                                        <h3 id="mostPollutedCity">--</h3>
-                                        <p>AQI: <span id="mostPollutedAQI">--</span></p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div id="leastPollutedCard" class="highlight-box least-polluted">
-                                        <h5>Least Polluted City Today</h5>
-                                        <h3 id="leastPollutedCity">--</h3>
-                                        <p>AQI: <span id="leastPollutedAQI">--</span></p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- Extra Environmental Data -->
+                    <!-- Pollution-Weather Correlation -->
                     <div class="row mb-4">
                         <div class="col-12">
-                            <h4 class="mb-3">Environmental Data</h4>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Current Weather Conditions</h5>
-                                            <div class="weather-card">
-                                                <i class="bi bi-thermometer-half weather-icon text-danger"></i>
-                                                <div>
-                                                    <h6>Temperature</h6>
-                                                    <p id="temperature">--°C</p>
-                                                </div>
-                                            </div>
-                                            <div class="weather-card">
-                                                <i class="bi bi-droplet weather-icon text-primary"></i>
-                                                <div>
-                                                    <h6>Humidity</h6>
-                                                    <p id="humidity">--%</p>
-                                                </div>
-                                            </div>
-                                            <div class="weather-card">
-                                                <i class="bi bi-wind weather-icon text-success"></i>
-                                                <div>
-                                                    <h6>Wind Speed</h6>
-                                                    <p id="windSpeed">-- km/h</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Pollution-Weather Correlation</h5>
-                                            <div class="chart-container">
-                                                <canvas id="correlationChart"></canvas>
-                                            </div>
-                                            <p class="mt-2"><strong>Insight:</strong> Higher humidity increases PM2.5 levels.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- User-Friendly Additions -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h4 class="mb-3">Additional Features</h4>
-                            <div class="card mb-3">
+                            <h4 class="mb-3">Pollution-Weather Correlation</h4>
+                            <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title">Historical Timeline</h5>
-                                    <input type="range" class="form-range timeline-slider" id="timelineSlider" min="1" max="12" value="6">
-                                    <div class="d-flex justify-content-between">
-                                        <span>Jan</span>
-                                        <span>Feb</span>
-                                        <span>Mar</span>
-                                        <span>Apr</span>
-                                        <span>May</span>
-                                        <span>Jun</span>
-                                        <span>Jul</span>
-                                        <span>Aug</span>
-                                        <span>Sep</span>
-                                        <span>Oct</span>
-                                        <span>Nov</span>
-                                        <span>Dec</span>
+                                    <div class="chart-container">
+                                        <canvas id="correlationChart"></canvas>
                                     </div>
-                                    <div class="chart-container mt-3">
-                                        <canvas id="timelineChart"></canvas>
-                                    </div>
+                                    <p class="mt-2"><strong>Insight:</strong> Higher humidity tends to increase PM2.5 levels across all cities.</p>
                                 </div>
                             </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Download Report</h5>
-                                            <p>Download a comprehensive report of current air quality analysis.</p>
-                                            <button class="btn btn-primary" onclick="downloadReport()">
-                                                <i class="bi bi-download me-2"></i>Download PDF
-                                            </button>
-                                        </div>
-                                    </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Features - PDF and Alerts -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Download Report</h5>
+                                    <p>Download a comprehensive report of current air quality analysis for all tracked cities.</p>
+                                    <button class="btn btn-primary" onclick="downloadReport()">
+                                        <i class="bi bi-download me-2"></i>Download PDF
+                                    </button>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5 class="card-title">AQI Alerts</h5>
-                                            <div id="aqiAlert" class="alert-card alert-warning">
-                                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                                <span id="alertText">Your city AQI crossed 150 (Unhealthy).</span>
-                                            </div>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="alertToggle" checked>
-                                                <label class="form-check-label" for="alertToggle">Enable AQI alerts</label>
-                                            </div>
-                                        </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">AQI Alerts</h5>
+                                    <div id="aqiAlert" class="alert-card alert-warning">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <span id="alertText">Your city AQI crossed 150 (Unhealthy).</span>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="alertToggle" checked>
+                                        <label class="form-check-label" for="alertToggle">Enable AQI alerts</label>
                                     </div>
                                 </div>
                             </div>
@@ -901,38 +918,7 @@
                     }
                 }, 500);
                 
-                // Add click event to map
-                map.on('click', function(e) {
-                    if (localStorage.getItem('userType') === 'guest') {
-                        alert('Guest users cannot add custom cities. Please register or login to add custom cities.');
-                        return;
-                    }
-                    
-                    const lat = e.latlng.lat;
-                    const lng = e.latlng.lng;
-                    
-                    // Add marker at clicked location
-                    const marker = L.marker([lat, lng]).addTo(map);
-                    markers.push(marker);
-                    
-                    // You can add a form here to get city name and other details
-                    const cityName = prompt('Enter city name:');
-                    if (cityName) {
-                        // Add city to tracker
-                        addCityToTracker({
-                            name: cityName,
-                            lat: lat,
-                            lng: lng,
-                            aqi: Math.floor(Math.random() * 300) + 50,
-                            pm25: Math.floor(Math.random() * 100) + 20,
-                            pm10: Math.floor(Math.random() * 150) + 30,
-                            no2: Math.floor(Math.random() * 80) + 10,
-                            so2: Math.floor(Math.random() * 60) + 5,
-                            co: Math.floor(Math.random() * 10) + 1,
-                            o3: Math.floor(Math.random() * 120) + 20
-                        });
-                    }
-                });
+                // Map click event removed - users should search for cities instead
                 
                 console.log('Map initialized successfully');
             } catch (error) {
@@ -1016,6 +1002,9 @@
             
             // Update user tracked cities count
             updateUserTrackedCitiesCount(cities.length);
+            
+            // Populate city selectors for analysis tabs
+            populateCitySelectors();
             
             citiesContainer.innerHTML = '';
             
@@ -1397,6 +1386,7 @@
         function searchMapLocation() {
             const locationInput = document.getElementById('mapLocationInput');
             const locationName = locationInput.value.trim();
+            const searchResult = document.getElementById('searchResult');
             
             if (!locationName) {
                 alert('Please enter a city name');
@@ -1416,14 +1406,255 @@
                     .bindPopup(`<b>${city.name}</b>`)
                     .openPopup();
                 markers.push(marker);
+                
+                // Show add to tracker button
+                searchResult.innerHTML = `
+                    <div class="alert alert-success p-2 mb-0">
+                        <small><strong>${city.name}</strong> found!</small>
+                        <button class="btn btn-sm btn-primary w-100 mt-2" onclick="addCityFromMap('${city.name}')">
+                            <i class="bi bi-plus-circle me-1"></i>Add to Tracker
+                        </button>
+                    </div>
+                `;
+                searchResult.style.display = 'block';
             } else {
-                alert('City not found. Please try another city.');
+                searchResult.innerHTML = `
+                    <div class="alert alert-warning p-2 mb-0">
+                        <small>City not found. Please try another city.</small>
+                    </div>
+                `;
+                searchResult.style.display = 'block';
             }
         }
         
         // Download report
         function downloadReport() {
             alert('Report download feature would be implemented here. In a real application, this would generate a PDF report.');
+        }
+        
+        // Load single city analysis
+        function loadSingleCityAnalysis(cityName) {
+            const analysisContent = document.getElementById('singleCityAnalysisContent');
+            
+            if (!cityName) {
+                analysisContent.style.display = 'none';
+                return;
+            }
+            
+            const cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
+            const city = cities.find(c => c.name === cityName);
+            
+            if (!city) {
+                alert('City not found');
+                return;
+            }
+            
+            // Show analysis content
+            analysisContent.style.display = 'block';
+            
+            // Update city name in forecast
+            document.getElementById('forecastCityName').textContent = cityName;
+            document.getElementById('analysisCityName').textContent = `${cityName} Analysis`;
+            
+            // Update health impact for this city
+            updateHealthImpact(city.aqi);
+            
+            // Generate 3-day forecast for this city
+            generate3DayForecast(city);
+            
+            // Update pollutant chart for this city
+            updateCityPollutantChart(city);
+            
+            // Update environmental data
+            updateEnvironmentalData(city);
+        }
+        
+        // Update health impact based on AQI
+        function updateHealthImpact(aqi) {
+            const healthCard = document.getElementById('healthImpactCard');
+            const healthTitle = document.getElementById('healthTitle');
+            const healthDescription = document.getElementById('healthDescription');
+            
+            if (aqi <= 50) {
+                healthCard.className = 'health-card health-good';
+                healthTitle.textContent = "Today's air is Good - Air quality is satisfactory.";
+                healthDescription.textContent = "Air quality is ideal for most activities. Enjoy outdoor time!";
+            } else if (aqi <= 100) {
+                healthCard.className = 'health-card health-moderate';
+                healthTitle.textContent = "Today's air is Moderate - Sensitive people should consider reducing prolonged outdoor exertion.";
+                healthDescription.textContent = "Air quality is acceptable for most people. However, unusually sensitive people should consider reducing prolonged outdoor activities.";
+            } else if (aqi <= 150) {
+                healthCard.className = 'health-card health-unhealthy-sensitive';
+                healthTitle.textContent = "Unhealthy for Sensitive Groups - People with respiratory conditions should limit outdoor activities.";
+                healthDescription.textContent = "Members of sensitive groups may experience health effects. The general public is less likely to be affected.";
+            } else if (aqi <= 200) {
+                healthCard.className = 'health-card health-unhealthy';
+                healthTitle.textContent = "Unhealthy - Everyone may experience health effects.";
+                healthDescription.textContent = "Some members of the general public may experience health effects; members of sensitive groups may experience more serious health effects.";
+            } else if (aqi <= 300) {
+                healthCard.className = 'health-card health-very-unhealthy';
+                healthTitle.textContent = "Very Unhealthy - Health alert: everyone may experience serious health effects.";
+                healthDescription.textContent = "Health warnings of emergency conditions. The entire population is more likely to be affected.";
+            } else {
+                healthCard.className = 'health-card health-hazardous';
+                healthTitle.textContent = "Hazardous - Health warning of emergency conditions.";
+                healthDescription.textContent = "Everyone is more likely to be affected. Avoid all outdoor activities.";
+            }
+        }
+        
+        // Generate 3-day forecast for a city
+        function generate3DayForecast(city) {
+            const forecastContainer = document.getElementById('forecastContainer');
+            forecastContainer.innerHTML = '';
+            
+            const days = ['Tomorrow', 'Day 2', 'Day 3'];
+            const forecastData = [];
+            
+            for (let i = 0; i < 3; i++) {
+                const variation = (Math.random() - 0.5) * 40;
+                const forecastAQI = Math.max(50, Math.min(300, city.aqi + variation));
+                forecastData.push(Math.round(forecastAQI));
+                
+                let aqiColor;
+                if (forecastAQI <= 50) aqiColor = 'success';
+                else if (forecastAQI <= 100) aqiColor = 'warning';
+                else if (forecastAQI <= 150) aqiColor = 'orange';
+                else aqiColor = 'danger';
+                
+                const forecastCard = `
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h6>${days[i]}</h6>
+                                <div class="fs-3 fw-bold text-${aqiColor}">${Math.round(forecastAQI)}</div>
+                                <small class="text-muted">AQI</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                forecastContainer.innerHTML += forecastCard;
+            }
+            
+            // Update forecast chart
+            updateForecastChart([city.aqi, ...forecastData]);
+        }
+        
+        // Update forecast chart
+        function updateForecastChart(data) {
+            const ctx = document.getElementById('forecastChart');
+            if (!ctx) return;
+            
+            if (chartInstances['forecastChart']) {
+                chartInstances['forecastChart'].destroy();
+            }
+            
+            chartInstances['forecastChart'] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Today', 'Tomorrow', 'Day 2', 'Day 3'],
+                    datasets: [{
+                        label: 'AQI Forecast',
+                        data: data,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update city pollutant chart
+        function updateCityPollutantChart(city) {
+            const ctx = document.getElementById('cityPollutantChart');
+            if (!ctx) return;
+            
+            if (chartInstances['cityPollutantChart']) {
+                chartInstances['cityPollutantChart'].destroy();
+            }
+            
+            chartInstances['cityPollutantChart'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['PM2.5', 'PM10', 'NO₂', 'SO₂', 'CO', 'O₃'],
+                    datasets: [{
+                        label: 'Concentration',
+                        data: [city.pm25, city.pm10, city.no2, city.so2, city.co, city.o3],
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#f093fb',
+                            '#4facfe',
+                            '#00f2fe',
+                            '#43e97b'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update environmental data
+        function updateEnvironmentalData(city) {
+            // Simulate environmental data
+            document.getElementById('temperature').textContent = (20 + Math.random() * 15).toFixed(1) + '°C';
+            document.getElementById('humidity').textContent = (40 + Math.random() * 40).toFixed(0) + '%';
+            document.getElementById('windSpeed').textContent = (5 + Math.random() * 20).toFixed(1) + ' km/h';
+        }
+        
+        // Populate city selectors
+        function populateCitySelectors() {
+            const cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
+            const singleCitySelect = document.getElementById('singleCitySelect');
+            const city1Select = document.getElementById('city1Select');
+            const city2Select = document.getElementById('city2Select');
+            
+            if (singleCitySelect) {
+                singleCitySelect.innerHTML = '<option value="">Select a city to analyze...</option>';
+                cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.name;
+                    option.textContent = city.name;
+                    singleCitySelect.appendChild(option);
+                });
+            }
+            
+            if (city1Select) {
+                city1Select.innerHTML = '<option value="">Select first city</option>';
+                cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.name;
+                    option.textContent = city.name;
+                    city1Select.appendChild(option);
+                });
+            }
+            
+            if (city2Select) {
+                city2Select.innerHTML = '<option value="">Select second city</option>';
+                cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.name;
+                    option.textContent = city.name;
+                    city2Select.appendChild(option);
+                });
+            }
         }
         
         // Initialize analysis charts
@@ -2211,6 +2442,11 @@
             
             // Initialize analysis charts when analysis tab is shown
             document.getElementById('analysis-tab').addEventListener('shown.bs.tab', function() {
+                // Populate city selector for single city analysis
+                populateCitySelectors();
+            });
+            
+            document.getElementById('overall-tab').addEventListener('shown.bs.tab', function() {
                 // Reinitialize every time tab is shown to get latest city data
                 initializeAnalysisCharts();
                 initializeForecast();
