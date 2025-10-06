@@ -22,6 +22,8 @@ services:
         sync: false
       - key: DB_PORT
         value: 5432
+      - key: DB_POOL_MAX
+        value: 5
       - key: JWT_SECRET
         sync: false
       - key: JWT_EXPIRY
@@ -33,6 +35,6 @@ services:
       - key: RATE_LIMIT_MAX
         value: "100"
       - key: ALLOWED_ORIGINS
-        value: "https://air-pollution-tracker.onrender.com"
+        value: "https://air-pollution-tracker.onrender.com,https://air-pollution-tracker-backend.onrender.com"
     healthCheckPath: /health
     autoDeploy: true

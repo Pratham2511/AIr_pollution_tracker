@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { PollutionReading, User } = require('../models');
 const pollutionService = require('../services/pollutionService');
 
@@ -21,8 +22,9 @@ exports.createPollutionReading = async (req, res) => {
 
 exports.getPollutionReadings = async (req, res) => {
   try {
-    const { page = 1, limit = 10, city, startDate, endDate } = req.query;
-    const offset = (page - 1) * limit;
+  const { page = 1, city, startDate, endDate } = req.query;
+  let { limit = 10 } = req.query;
+  const offset = (page - 1) * limit;
     
     // For guest users, limit the data access
     if (req.user.isGuest) {
@@ -33,13 +35,13 @@ exports.getPollutionReadings = async (req, res) => {
     if (city) where.city = city;
     if (startDate && endDate) {
       where.recordedAt = {
-        [Sequelize.Op.between]: [new Date(startDate), new Date(endDate)]
+        [Op.between]: [new Date(startDate), new Date(endDate)]
       };
     }
     
     const { count, rows } = await PollutionReading.findAndCountAll({
       where,
-      limit: parseInt(limit),
+  limit: parseInt(limit, 10),
       offset,
       order: [['recordedAt', 'DESC']],
       include: [
@@ -54,8 +56,8 @@ exports.getPollutionReadings = async (req, res) => {
     // For guest users, limit the response data
     let responseData = {
       pollutionReadings: rows,
-      totalPages: Math.ceil(count / limit),
-      currentPage: parseInt(page),
+  totalPages: Math.ceil(count / limit),
+  currentPage: parseInt(page, 10),
       totalItems: count
     };
 

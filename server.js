@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const compression = require('compression');
+const cors = require('cors');
 const { sequelize } = require('./models');
 
 // Validate critical environment variables
@@ -27,6 +28,29 @@ app.set('trust proxy', 1);
 // Performance middleware (order matters!)
 app.use(compression()); // Enable gzip compression
 app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
+
+// CORS configuration – allow Render frontend and local development
+const configuredOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+const defaultOrigins = ['http://localhost:3000', 'http://localhost:5173'];
+const allowedOrigins = configuredOrigins.length ? configuredOrigins : defaultOrigins;
+
+app.use(cors({
+  origin(origin, callback) {
+    // Allow same-origin or tools (e.g., curl/Postman) with no origin
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`❌ Blocked CORS origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');

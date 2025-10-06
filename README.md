@@ -243,6 +243,35 @@ Go to: `http://localhost:3000`
 
 ---
 
+## ☁️ Deploying on Render
+
+1. **Create the services**
+   - Provision a *Web Service* from this repository (Node runtime).
+   - Provision a *PostgreSQL* instance (Render Free tier works for trials).
+
+2. **Configure environment variables (Render Dashboard → Environment)**
+   - `DATABASE_URL` – copy the External URL from the Render PostgreSQL page.
+   - `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` – also available on the database dashboard.
+   - `JWT_SECRET` – generate a strong secret; do **not** commit it.
+   - `BCRYPT_SALT_ROUNDS` – keep at `12` unless you need quicker hashes.
+   - `ALLOWED_ORIGINS` – comma-separated list of allowed front-end origins (e.g. `https://your-app.onrender.com`).
+   - Optional: `DB_POOL_MAX` to adjust the Sequelize pool (defaults to `5`, matching Render Free limits).
+
+3. **Build & start commands**
+   - The service uses `npm ci --omit=dev && npm run build` during build.
+   - Runtime command is `npm start`, which binds to the `PORT` Render injects.
+
+4. **Database migrations**
+   - Run `npm run migrate` against the Render database once (from Render shell or your local machine with the same `DATABASE_URL`).
+   - Optionally execute `npm run seed` if you want demo pollution data.
+
+5. **Free tier heads-up**
+   - Free Postgres instances have low connection limits; this project caps the pool at five connections to avoid errors.
+   - Sleeping services can take ~50s to wake; expect a slow first request.
+   - Render deletes free databases on the listed expiry date, so upgrade or back up before then.
+
+---
+
 ## 🗂️ Project Structure (Where Everything Lives)
 
 ```

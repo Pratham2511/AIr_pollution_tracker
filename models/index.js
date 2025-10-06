@@ -7,6 +7,8 @@ if (!process.env.DATABASE_URL && !process.env.DB_PASSWORD) {
 }
 
 // Database configuration with better connection handling
+const MAX_POOL = Number(process.env.DB_POOL_MAX || 5);
+
 const sequelize = process.env.DATABASE_URL
   ? new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
@@ -19,8 +21,8 @@ const sequelize = process.env.DATABASE_URL
         connectTimeout: 60000 // 60 seconds
       },
       pool: {
-        max: 10,
-        min: 2,
+        max: MAX_POOL,
+        min: 1,
         acquire: 60000,
         idle: 10000,
         evict: 1000
@@ -47,8 +49,8 @@ const sequelize = process.env.DATABASE_URL
           connectTimeout: 60000
         },
         pool: {
-          max: 10,
-          min: 2,
+          max: MAX_POOL,
+          min: 1,
           acquire: 60000,
           idle: 10000,
           evict: 1000

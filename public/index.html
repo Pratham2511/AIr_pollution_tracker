@@ -713,17 +713,88 @@
     
     <!-- Custom JavaScript -->
     <script>
-        // Wait for cities data to load
         let citiesData = [];
-        
-        // Poll for cities data
-        const waitForCitiesData = setInterval(() => {
-            if (window.indianCitiesData) {
-                citiesData = window.indianCitiesData;
-                console.log('Cities data loaded successfully:', citiesData.length, 'cities');
-                clearInterval(waitForCitiesData);
+        let citiesDataPromise = null;
+
+        async function loadCitiesData({ forceRefresh = false } = {}) {
+            if (!forceRefresh && citiesData.length > 0) {
+                return citiesData;
             }
-        }, 100);
+
+            if (!forceRefresh && citiesDataPromise) {
+                return citiesDataPromise;
+            }
+
+            citiesDataPromise = (async () => {
+                try {
+                    console.log('Fetching cities data from API...');
+                    const response = await fetch('/api/pollution/cities', {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API request failed with status ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    if (!Array.isArray(data) || data.length === 0) {
+                        throw new Error('API returned empty dataset');
+                    }
+
+                    citiesData = data;
+                    window.indianCitiesData = data;
+                    console.log('✅ Cities data loaded from API:', data.length, 'cities');
+                    return data;
+                } catch (error) {
+                    console.warn('⚠️  Failed to fetch cities from API, using local fallback:', error.message);
+                    if (Array.isArray(window.indianCitiesData) && window.indianCitiesData.length) {
+                        citiesData = window.indianCitiesData;
+                        return citiesData;
+                    }
+                    citiesData = [];
+                    return citiesData;
+                }
+            })();
+
+            const resolvedData = await citiesDataPromise;
+            citiesDataPromise = null;
+            return resolvedData;
+        }
+
+        function ensureDefaultTrackedCities() {
+            const userType = localStorage.getItem('userType');
+            if (userType === 'guest') {
+                return false;
+            }
+
+            const stored = JSON.parse(localStorage.getItem('trackedCities')) || [];
+            if (stored.length === 0 && citiesData.length > 0) {
+                const defaults = [...citiesData]
+                    .sort((a, b) => b.aqi - a.aqi)
+                    .slice(0, 3);
+                localStorage.setItem('trackedCities', JSON.stringify(defaults));
+                console.log('🌱 Seeded default tracked cities:', defaults.map(city => city.name).join(', '));
+                return true;
+            }
+            return false;
+        }
+
+        function refreshStoredTrackedCities() {
+            const stored = JSON.parse(localStorage.getItem('trackedCities')) || [];
+            if (stored.length === 0 || citiesData.length === 0) {
+                return false;
+            }
+
+            const refreshed = stored.map(city => {
+                const latest = citiesData.find(c => c.name === city.name);
+                return latest ? { ...latest } : city;
+            });
+            localStorage.setItem('trackedCities', JSON.stringify(refreshed));
+            console.log('🔄 Synced tracked cities with latest dataset');
+            return true;
+        }
         
         // Authentication check
         document.addEventListener('DOMContentLoaded', function() {
@@ -844,7 +915,7 @@
         let map;
         let markers = [];
         
-        function initMap() {
+        async function initMap() {
             // Check if map already exists
             if (map) {
                 try {
@@ -882,12 +953,12 @@
                 console.log('Map tiles added');
                 
                 // Wait a bit for cities data to be available
-                setTimeout(() => {
-                    // Add markers for all cities from cities.js
-                    const cities = citiesData.length > 0 ? citiesData : window.indianCitiesData || [];
-                    
+                setTimeout(async () => {
+                    const dataset = await loadCitiesData();
+                    const cities = dataset.length > 0 ? dataset : window.indianCitiesData || [];
+
                     console.log('Adding markers for', cities.length, 'cities');
-                    
+
                     if (cities.length > 0) {
                         cities.forEach(city => {
                             const marker = L.marker([city.lat, city.lon]).addTo(map);
@@ -925,7 +996,7 @@
         }
         
         // Add city from map
-        function addCityFromMap(cityName) {
+        async function addCityFromMap(cityName) {
             // Check if user is a guest
             const userType = localStorage.getItem('userType');
             if (userType === 'guest') {
@@ -936,6 +1007,10 @@
                 return;
             }
             
+            if (citiesData.length === 0) {
+                await loadCitiesData();
+            }
+
             const cities = citiesData.length > 0 ? citiesData : window.indianCitiesData || [];
             const city = cities.find(c => c.name === cityName);
             
@@ -963,7 +1038,7 @@
             // Check if city already exists
             const existingCity = cities.find(c => c.name === city.name);
             if (existingCity) {
-                alert('City already in tracker!');
+                showNotification('City already in tracker!', 'warning');
                 return;
             }
             
@@ -975,6 +1050,9 @@
             
             // Refresh the display
             displayTrackedCities();
+
+            // Capture a snapshot for historical tracking
+            saveHistoricalData();
             
             // Update analysis charts if the analysis tab is currently active
             const analysisTab = document.getElementById('analysis');
@@ -1125,6 +1203,10 @@
             }
             
             // For authenticated users, use the imported cities data
+            if (citiesData.length === 0) {
+                await loadCitiesData();
+            }
+
             const cities = citiesData.length > 0 ? citiesData : window.indianCitiesData || [];
             
             console.log('Add Random City - Cities data available:', cities.length);
@@ -1223,32 +1305,45 @@
         }
         
         // Refresh all cities data
-        function refreshAllCitiesData() {
+        async function refreshAllCitiesData() {
             let cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
-            
-            cities = cities.map(city => ({
-                ...city,
-                aqi: Math.floor(Math.random() * 300) + 50,
-                pm25: Math.floor(Math.random() * 100) + 20,
-                pm10: Math.floor(Math.random() * 150) + 30,
-                no2: Math.floor(Math.random() * 80) + 10,
-                so2: Math.floor(Math.random() * 60) + 5,
-                co: Math.floor(Math.random() * 10) + 1,
-                o3: Math.floor(Math.random() * 120) + 20
-            }));
-            
-            localStorage.setItem('trackedCities', JSON.stringify(cities));
+            if (cities.length === 0) {
+                return;
+            }
+
+            showNotification('Refreshing city data...', 'info');
+
+            const cityNames = cities.map(city => city.name);
+            const latestData = await loadCitiesData({ forceRefresh: true });
+
+            if (latestData.length === 0) {
+                showNotification('Unable to reach the server. Showing last known data.', 'warning');
+                return;
+            }
+
+            const updated = cityNames
+                .map(name => latestData.find(city => city.name === name))
+                .filter(Boolean);
+
+            if (updated.length === 0) {
+                showNotification('No matching cities found in the latest dataset.', 'warning');
+                return;
+            }
+
+            localStorage.setItem('trackedCities', JSON.stringify(updated));
             displayTrackedCities();
-            
+
             // Save historical data for forecast
             saveHistoricalData();
-            
+
             // Update analysis charts if the analysis tab is currently active
             const analysisTab = document.getElementById('analysis');
             if (analysisTab && analysisTab.classList.contains('active')) {
                 initializeAnalysisCharts();
                 initializeForecast();
             }
+
+            showNotification('City data refreshed from the latest API snapshot.', 'success');
         }
         
         // View city details - Opens City Analysis tab with selected city
@@ -1272,7 +1367,7 @@
         }
         
         // Search map location
-        function searchMapLocation() {
+        async function searchMapLocation() {
             const locationInput = document.getElementById('mapLocationInput');
             const locationName = locationInput.value.trim();
             const searchResult = document.getElementById('searchResult');
@@ -1282,8 +1377,12 @@
                 return;
             }
             
+            if (citiesData.length === 0) {
+                await loadCitiesData();
+            }
+
             // Use the imported cities data
-            const cities = citiesData.length > 0 ? citiesData : window.indianCitiesData || [];
+            const cities = (citiesData.length > 0 ? citiesData : window.indianCitiesData || []);
             
             const city = cities.find(c => c.name.toLowerCase() === locationName.toLowerCase());
             
@@ -1508,17 +1607,6 @@
             document.getElementById('windSpeed').textContent = (5 + Math.random() * 20).toFixed(1) + ' km/h';
         }
         
-        // Populate city selectors
-        function populateCitySelectors() {
-            const cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
-            const singleCitySelect = document.getElementById('singleCitySelect');
-            const city1Select = document.getElementById('city1Select');
-            const city2Select = document.getElementById('city2Select');
-            
-            if (singleCitySelect) {
-                singleCitySelect.innerHTML = '<option value="">Select a city to analyze...</option>';
-                cities.forEach(city => {
-                    const option = document.createElement('option');
         // Populate city selectors
         function populateCitySelectors() {
             const cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
@@ -2283,24 +2371,14 @@
             const countElement = document.getElementById('totalCitiesCount');
             
             try {
-                // First try to use the imported cities data
-                const cities = citiesData.length > 0 ? citiesData : window.indianCitiesData || [];
-                
-                if (cities.length > 0) {
-                    countElement.innerHTML = `<strong>${cities.length}</strong>`;
+                const dataset = await loadCitiesData();
+                if (dataset.length > 0) {
+                    countElement.innerHTML = `<strong>${dataset.length}</strong>`;
                     return;
                 }
-                
-                // Fallback to API if cities data not loaded
-                const response = await fetch('/api/pollution/cities');
-                if (response.ok) {
-                    const data = await response.json();
-                    const totalCities = data.length || 0;
-                    countElement.innerHTML = `<strong>${totalCities}</strong>`;
-                } else {
-                    // Fallback if API fails
-                    countElement.innerHTML = '<strong>50</strong>';
-                }
+
+                // Fallback if dataset still empty
+                countElement.innerHTML = '<strong>50</strong>';
             } catch (error) {
                 console.error('Error fetching total cities count:', error);
                 // Fallback value from cities.js
@@ -2309,7 +2387,11 @@
         }
         
         // Initialize everything when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCitiesData();
+            refreshStoredTrackedCities();
+            const seeded = ensureDefaultTrackedCities();
+
             // Fetch and display total cities count from database
             fetchTotalCitiesCount();
             
@@ -2342,8 +2424,16 @@
                 initializeForecast();
             });
             
-            // Display tracked cities
+            // Display tracked cities (will render defaults if seeded)
             displayTrackedCities();
+            if (seeded) {
+                saveHistoricalData();
+                showNotification('We added a few cities to get you started. Customize your tracker anytime!', 'info');
+            }
+
+            if ((JSON.parse(localStorage.getItem('trackedCities')) || []).length > 0) {
+                initializeForecast();
+            }
             
             // Dark mode toggle
             const darkModeToggle = document.getElementById('darkModeToggle');
