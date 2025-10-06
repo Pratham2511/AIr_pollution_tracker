@@ -1,12 +1,12 @@
-# 🌫️ AIRLYTICS - Air Pollution Tracker# Air Pollution Tracker Backend
+# 🌫️ AIRLYTICS - Air Pollution Tracker
 
+> **A simple, beautiful website that shows how clean or dirty the air is in different Indian cities!**
 
+This is a full-stack web application for tracking and analyzing air pollution data across major Indian cities with real-time monitoring, interactive maps, and health recommendations.
 
-> **A simple, beautiful website that shows how clean or dirty the air is in different Indian cities!**This is the backend API for the Air Pollution Tracker application. It provides RESTful endpoints for user authentication and pollution data management.
+---
 
-
-
----## Tech Stack
+## Tech Stack
 
 
 

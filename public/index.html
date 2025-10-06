@@ -1264,20 +1264,6 @@
                 loadSingleCityAnalysis(cityName);
             }
         }
-                    healthDescription = "Everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects.";
-        // View city details - Opens City Analysis tab with selected city
-        function viewCityDetails(cityName) {
-            const cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
-            const city = cities.find(c => c.name === cityName);
-            
-            if (city) {
-                // Switch to analysis tab
-                document.getElementById('analysis-tab').click();
-                
-                // Load analysis for this city
-                loadSingleCityAnalysis(cityName);
-            }
-        }
         
         // Show all cities analysis (no longer needed but kept for compatibility)
         function showAllCitiesAnalysis() {
