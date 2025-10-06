@@ -1,5 +1,7 @@
 const rateLimit = require('express-rate-limit');
 
+const isTestEnv = process.env.NODE_ENV === 'test';
+
 const createRateLimiter = (windowMs, max, message) => {
   return rateLimit({
     windowMs,
@@ -7,7 +9,8 @@ const createRateLimiter = (windowMs, max, message) => {
     message,
     standardHeaders: true,
     legacyHeaders: false,
-    trustProxy: true  // Add this line to trust proxy headers
+    trustProxy: true, // Add this line to trust proxy headers
+    skip: () => isTestEnv
   });
 };
 

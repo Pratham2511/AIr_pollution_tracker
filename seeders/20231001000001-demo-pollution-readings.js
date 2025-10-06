@@ -2,7 +2,6 @@ module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.bulkInsert('pollution_readings', [
       {
-        id: '223e4567-e89b-12d3-a456-426614174001',
         city: 'Delhi',
         country: 'India',
         lat: 28.7041,
@@ -15,12 +14,11 @@ module.exports = {
         so2: 18.7,
         co: 1.2,
         recordedAt: new Date(),
-        userId: '123e4567-e89b-12d3-a456-426614174000',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
-        id: '223e4567-e89b-12d3-a456-426614174002',
         city: 'Mumbai',
         country: 'India',
         lat: 19.0760,
@@ -33,12 +31,11 @@ module.exports = {
         so2: 12.4,
         co: 0.8,
         recordedAt: new Date(),
-        userId: '123e4567-e89b-12d3-a456-426614174000',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
-        id: '223e4567-e89b-12d3-a456-426614174003',
         city: 'Kolkata',
         country: 'India',
         lat: 22.5726,
@@ -51,12 +48,11 @@ module.exports = {
         so2: 15.6,
         co: 1.0,
         recordedAt: new Date(),
-        userId: '123e4567-e89b-12d3-a456-426614174000',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
-        id: '223e4567-e89b-12d3-a456-426614174004',
         city: 'Chennai',
         country: 'India',
         lat: 13.0827,
@@ -69,12 +65,11 @@ module.exports = {
         so2: 10.8,
         co: 0.7,
         recordedAt: new Date(),
-        userId: '123e4567-e89b-12d3-a456-426614174000',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
-        id: '223e4567-e89b-12d3-a456-426614174005',
         city: 'Bangalore',
         country: 'India',
         lat: 12.9716,
@@ -87,7 +82,7 @@ module.exports = {
         so2: 13.5,
         co: 0.9,
         recordedAt: new Date(),
-        userId: '123e4567-e89b-12d3-a456-426614174000',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       }

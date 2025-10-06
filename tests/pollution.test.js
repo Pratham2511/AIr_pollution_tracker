@@ -1,6 +1,10 @@
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'sqlite::memory:';
+
 const request = require('supertest');
 const app = require('../server');
-const { User, PollutionReading } = require('../models');
+const { sequelize, User, PollutionReading } = require('../models');
 const jwt = require('jsonwebtoken');
 
 describe('Pollution Endpoints', () => {
@@ -10,17 +14,19 @@ describe('Pollution Endpoints', () => {
   let adminUserId;
 
   beforeAll(async () => {
+    await sequelize.sync({ force: true });
+
     // Create test users
     const user = await User.create({
       name: 'Test User',
       email: 'test@example.com',
-      password: 'password123'
+      password: 'Passw0rd!23'
     });
 
     const adminUser = await User.create({
       name: 'Admin User',
       email: 'admin@example.com',
-      password: 'password123',
+      password: 'Adm1n$ecure',
       isAdmin: true
     });
 
@@ -65,9 +71,7 @@ describe('Pollution Endpoints', () => {
   });
 
   afterAll(async () => {
-    // Clean up test data
-    await User.destroy({ where: { id: [userId, adminUserId] } });
-    await PollutionReading.destroy({ where: { userId: [userId, adminUserId] } });
+    await sequelize.truncate({ cascade: true });
   });
 
   describe('GET /api/pollution/latest', () => {
@@ -127,6 +131,17 @@ describe('Pollution Endpoints', () => {
         .get(`/api/pollution?startDate=${yesterday.toISOString()}&endDate=${today.toISOString()}`);
       
       expect(res.statusCode).toEqual(200);
+    });
+
+    it('should cap guest users to a maximum of 5 records per page', async () => {
+      const res = await request(app)
+        .get('/api/pollution?limit=25')
+        .set('User-Type', 'guest');
+
+      expect(res.statusCode).toEqual(200);
+      expect(Array.isArray(res.body.pollutionReadings)).toBe(true);
+      expect(res.body.pollutionReadings.length).toBeLessThanOrEqual(5);
+      expect(res.body.currentPage).toEqual(1);
     });
   });
 

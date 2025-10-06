@@ -22,26 +22,44 @@ exports.createPollutionReading = async (req, res) => {
 
 exports.getPollutionReadings = async (req, res) => {
   try {
-  const { page = 1, city, startDate, endDate } = req.query;
-  let { limit = 10 } = req.query;
-  const offset = (page - 1) * limit;
+    const {
+      page = 1,
+      city,
+      startDate,
+      endDate
+    } = req.query;
+
+    const parsedPage = Number.parseInt(page, 10);
+    let pageNumber = Number.isNaN(parsedPage) ? 1 : Math.max(parsedPage, 1);
+
+    const parsedLimit = Number.parseInt(req.query.limit, 10);
+    let limitNumber = Number.isNaN(parsedLimit) ? 10 : Math.min(Math.max(parsedLimit, 1), 100);
     
     // For guest users, limit the data access
     if (req.user.isGuest) {
-      limit = Math.min(limit, 5); // Restrict to max 5 items per page for guests
+      limitNumber = Math.min(limitNumber, 5); // Restrict to max 5 items per page for guests
     }
+    const offset = (pageNumber - 1) * limitNumber;
     
     const where = {};
-    if (city) where.city = city;
+    if (city) {
+      where.city = city;
+    }
+
     if (startDate && endDate) {
-      where.recordedAt = {
-        [Op.between]: [new Date(startDate), new Date(endDate)]
-      };
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (!Number.isNaN(start.valueOf()) && !Number.isNaN(end.valueOf())) {
+        where.recordedAt = {
+          [Op.between]: [start, end]
+        };
+      }
     }
     
     const { count, rows } = await PollutionReading.findAndCountAll({
       where,
-  limit: parseInt(limit, 10),
+      limit: limitNumber,
       offset,
       order: [['recordedAt', 'DESC']],
       include: [
@@ -56,8 +74,8 @@ exports.getPollutionReadings = async (req, res) => {
     // For guest users, limit the response data
     let responseData = {
       pollutionReadings: rows,
-  totalPages: Math.ceil(count / limit),
-  currentPage: parseInt(page, 10),
+      totalPages: Math.ceil(count / limitNumber) || 1,
+      currentPage: pageNumber,
       totalItems: count
     };
 

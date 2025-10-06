@@ -1,21 +1,26 @@
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'sqlite::memory:';
+
 const request = require('supertest');
 const app = require('../server');
-const { User } = require('../models');
+const { sequelize, User } = require('../models');
 const jwt = require('jsonwebtoken');
 
 describe('Auth Endpoints', () => {
   beforeAll(async () => {
+    await sequelize.sync({ force: true });
+
     // Create a test user
     await User.create({
       name: 'Test User',
       email: 'test@example.com',
-      password: 'password123'
+      password: 'Passw0rd!23'
     });
   });
 
   afterAll(async () => {
-    // Clean up test data
-    await User.destroy({ where: { email: 'test@example.com' } });
+    await sequelize.truncate({ cascade: true });
   });
 
   describe('POST /api/auth/register', () => {
@@ -25,7 +30,7 @@ describe('Auth Endpoints', () => {
         .send({
           name: 'New User',
           email: 'newuser@example.com',
-          password: 'password123'
+          password: 'Str0ng!Pass'
         });
       
       expect(res.statusCode).toEqual(201);
@@ -40,7 +45,7 @@ describe('Auth Endpoints', () => {
         .send({
           name: 'Test User',
           email: 'test@example.com',
-          password: 'password123'
+          password: 'Another!Pass1'
         });
       
       expect(res.statusCode).toEqual(409);
@@ -67,7 +72,7 @@ describe('Auth Endpoints', () => {
         .post('/api/auth/login')
         .send({
           email: 'test@example.com',
-          password: 'password123'
+          password: 'Passw0rd!23'
         });
       
       expect(res.statusCode).toEqual(200);
@@ -96,9 +101,12 @@ describe('Auth Endpoints', () => {
         .post('/api/auth/login')
         .send({
           email: 'test@example.com',
-          password: 'password123'
+          password: 'Passw0rd!23'
         });
       
+      expect(loginRes.statusCode).toEqual(200);
+      expect(loginRes.body).toHaveProperty('token');
+
       const token = loginRes.body.token;
       
       const res = await request(app)

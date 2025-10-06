@@ -186,51 +186,46 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-// Start server immediately
-const PORT = process.env.PORT || 10000;
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📁 Serving files from: ${path.join(__dirname, 'public')}`);
-  console.log(`🏠 Landing page: / (serves landing.html)`);
-  console.log(`📊 Dashboard: /dashboard (serves index.html)`);
-});
-
-// Set timeouts to prevent 502 errors
-server.keepAliveTimeout = 120000; // 120 seconds
-server.headersTimeout = 120000; // 120 seconds
-
-// Track if we're shutting down
+let server;
+let keepAliveInterval;
 let isShuttingDown = false;
 
-// Handle graceful shutdown (only on actual shutdown, not random signals)
 const gracefulShutdown = (signal) => {
+  if (!server) {
+    return;
+  }
+
   if (isShuttingDown) {
     console.log('Already shutting down...');
     return;
   }
-  
+
   isShuttingDown = true;
   console.log(`${signal} received, shutting down gracefully`);
-  
-  // Give some time for active connections to finish
-  setTimeout(() => {
+
+  const closeServer = () => new Promise((resolve) => {
     server.close(() => {
       console.log('HTTP server closed');
-      sequelize.close()
-        .then(() => {
-          console.log('Database connection closed');
-          process.exit(0);
-        })
-        .catch(err => {
-          console.error('Error closing database:', err);
-          process.exit(1);
-        });
+      resolve();
     });
-  }, 5000); // Wait 5 seconds before closing
-};
+  });
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  setTimeout(async () => {
+    try {
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+      }
+
+      await closeServer();
+      await sequelize.close();
+      console.log('Database connection closed');
+      process.exit(0);
+    } catch (err) {
+      console.error('Error closing database:', err);
+      process.exit(1);
+    }
+  }, 5000);
+};
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
@@ -374,17 +369,61 @@ async function connectDatabase() {
   }
 }
 
-// Start database connection immediately
-connectDatabase();
-
-// Keep database connection alive
-setInterval(() => {
-  if (dbConnected && !isShuttingDown) {
-    sequelize.authenticate()
-      .catch(err => {
-        console.error('Database connection lost:', err.message);
-        dbConnected = false;
-        connectDatabase();
-      });
+const startServer = () => {
+  if (server) {
+    return server;
   }
-}, 30000); // Check every 30 seconds
+
+  const PORT = process.env.PORT || 10000;
+  server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📁 Serving files from: ${path.join(__dirname, 'public')}`);
+    console.log(`🏠 Landing page: / (serves landing.html)`);
+    console.log(`📊 Dashboard: /dashboard (serves index.html)`);
+  });
+
+  server.keepAliveTimeout = 120000; // 120 seconds
+  server.headersTimeout = 120000; // 120 seconds
+
+  connectDatabase();
+
+  keepAliveInterval = setInterval(() => {
+    if (dbConnected && !isShuttingDown) {
+      sequelize.authenticate()
+        .catch(err => {
+          console.error('Database connection lost:', err.message);
+          dbConnected = false;
+          connectDatabase();
+        });
+    }
+  }, 30000);
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  return server;
+};
+
+const stopServer = async () => {
+  if (!server) {
+    return;
+  }
+
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+    keepAliveInterval = null;
+  }
+
+  await new Promise((resolve) => server.close(resolve));
+  server = null;
+  dbConnected = false;
+};
+
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+
+module.exports = app;
+module.exports.startServer = startServer;
+module.exports.stopServer = stopServer;
+module.exports.connectDatabase = connectDatabase;

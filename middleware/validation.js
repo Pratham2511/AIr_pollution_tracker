@@ -1,4 +1,5 @@
 const { body, validationResult } = require('express-validator');
+const { sanitizeName, normalizeEmail, validatePasswordStrength } = require('../utils/security');
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
@@ -9,15 +10,50 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 const validateUserRegistration = [
-  body('name').notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Please provide a valid email'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+  body('name')
+    .exists({ checkFalsy: true }).withMessage('Name is required')
+    .bail()
+    .customSanitizer(value => sanitizeName(value))
+    .isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters')
+    .matches(/^[\p{L} .'-]+$/u).withMessage('Name may only include letters, spaces, apostrophes, periods, and hyphens'),
+  body('email')
+    .exists({ checkFalsy: true }).withMessage('Email is required')
+    .bail()
+    .customSanitizer(value => normalizeEmail(value))
+    .isEmail().withMessage('Please provide a valid email address'),
+  body('password')
+    .exists({ checkFalsy: true }).withMessage('Password is required')
+    .bail()
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters long')
+    .matches(/[A-Z]/).withMessage('Password must include at least one uppercase letter')
+    .matches(/[a-z]/).withMessage('Password must include at least one lowercase letter')
+    .matches(/\d/).withMessage('Password must include at least one number')
+    .matches(/[^A-Za-z0-9]/).withMessage('Password must include at least one special character')
+    .custom((value, { req }) => {
+      const { isValid, message } = validatePasswordStrength(value, {
+        email: req.body.email,
+        name: req.body.name
+      });
+
+      if (!isValid) {
+        throw new Error(message || 'Password does not meet security requirements');
+      }
+
+      return true;
+    }),
   handleValidationErrors
 ];
 
 const validateUserLogin = [
-  body('email').isEmail().withMessage('Please provide a valid email'),
-  body('password').notEmpty().withMessage('Password is required'),
+  body('email')
+    .exists({ checkFalsy: true }).withMessage('Email is required')
+    .bail()
+    .customSanitizer(value => normalizeEmail(value))
+    .isEmail().withMessage('Please provide a valid email address'),
+  body('password')
+    .exists({ checkFalsy: true }).withMessage('Password is required')
+    .bail()
+    .isLength({ min: 1 }).withMessage('Password is required'),
   handleValidationErrors
 ];
 

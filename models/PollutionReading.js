@@ -5,12 +5,33 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
-    cityName: {
+    city: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
         notEmpty: true,
         len: [1, 100]
+      }
+    },
+    country: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'India'
+    },
+    lat: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      validate: {
+        min: -90,
+        max: 90
+      }
+    },
+    lng: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      validate: {
+        min: -180,
+        max: 180
       }
     },
     aqi: {
@@ -69,19 +90,10 @@ module.exports = (sequelize, DataTypes) => {
         max: 1000
       }
     },
-    latitude: {
-      type: DataTypes.FLOAT,
-      validate: {
-        min: -90,
-        max: 90
-      }
-    },
-    longitude: {
-      type: DataTypes.FLOAT,
-      validate: {
-        min: -180,
-        max: 180
-      }
+    recordedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW
     },
     userId: {
       type: DataTypes.INTEGER,

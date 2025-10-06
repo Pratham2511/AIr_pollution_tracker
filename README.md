@@ -227,6 +227,17 @@ BCRYPT_SALT_ROUNDS=12
 PORT=3000
 ```
 
+### 🔐 Security & Access Rules
+
+- **Password policy**
+   - Minimum 8 characters
+   - At least one uppercase, one lowercase, one number, and one special character
+   - Rejects passwords that include your name/email or match common leaked passwords
+- **Email normalization**: addresses are lowercased and trimmed before we store them, so duplicate sign-ups with different casing fail early.
+- **Guest mode limitations**
+   - Guests only receive the top 5 readings per page and simplified pollutant data.
+   - Protected endpoints (create/update/delete) remain locked—guests must register to access them.
+
 **Step 4: Setup Database**
 ```bash
 npm run migrate    # Creates the database tables

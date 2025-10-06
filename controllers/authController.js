@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
+const { sanitizeName, normalizeEmail, validatePasswordStrength } = require('../utils/security');
 
 const generateToken = (id) => {
   const secret = process.env.JWT_SECRET || 'default-jwt-secret-please-change-in-production';
@@ -9,20 +10,34 @@ const generateToken = (id) => {
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    const sanitizedName = sanitizeName(name);
+    const normalizedEmail = normalizeEmail(email);
     
     // Validate input
-    if (!name || !email || !password) {
+    if (!sanitizedName || !normalizedEmail || !password) {
       return res.status(400).json({ message: 'Please provide name, email, and password' });
     }
     
+    const strengthCheck = validatePasswordStrength(password, {
+      email: normalizedEmail,
+      name: sanitizedName
+    });
+
+    if (!strengthCheck.isValid) {
+      return res.status(400).json({
+        message: strengthCheck.message || 'Password does not meet security requirements',
+        code: 'WEAK_PASSWORD'
+      });
+    }
+
     // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser = await User.findOne({ where: { email: normalizedEmail } });
     if (existingUser) {
       return res.status(409).json({ message: 'User already exists with this email' });
     }
     
     // Create new user
-    const user = await User.create({ name, email, password });
+    const user = await User.create({ name: sanitizedName, email: normalizedEmail, password });
     
     // Generate token
     const token = generateToken(user.id);
@@ -49,14 +64,15 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
     
     // Validate input
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
     
     // Find user by email
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email: normalizedEmail } });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
