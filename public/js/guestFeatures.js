@@ -38,8 +38,18 @@ function setupGuestRestrictions() {
 function disableMapCitySelection() {
   // Disable map click functionality
   if (typeof window.map !== 'undefined' && window.map) {
-    // Remove click event handlers
-    window.map.off('click');
+    try {
+      // For Leaflet maps, use off method if available
+      if (typeof window.map.off === 'function') {
+        window.map.off('click');
+      }
+      // Alternative: disable dragging and interactions
+      if (window.map.dragging) {
+        // Keep dragging enabled but remove click handlers
+      }
+    } catch (error) {
+      console.log('Map click handlers already handled:', error);
+    }
     
     // Disable all "Add City" buttons in map popups
     const style = document.createElement('style');

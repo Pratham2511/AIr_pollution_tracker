@@ -6,8 +6,19 @@ const guestAuth = async (req, res, next) => {
     const userType = req.header('User-Type');
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
-    // If no userType header is present, try token auth
-    if (!userType && token) {
+    // If no userType header and no token, allow as guest by default
+    if (!userType && !token) {
+      req.user = { 
+        isGuest: true,
+        id: null,
+        name: 'Guest User',
+        email: null
+      };
+      return next();
+    }
+
+    // If token is present, try token auth
+    if (token && !userType) {
       return auth(req, res, next);
     }
 
