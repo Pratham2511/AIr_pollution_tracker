@@ -156,44 +156,95 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 server.keepAliveTimeout = 120000; // 120 seconds
 server.headersTimeout = 120000; // 120 seconds
 
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    console.log('Process terminated');
-    sequelize.close().then(() => {
-      console.log('Database connection closed');
-      process.exit(0);
+// Track if we're shutting down
+let isShuttingDown = false;
+
+// Handle graceful shutdown (only on actual shutdown, not random signals)
+const gracefulShutdown = (signal) => {
+  if (isShuttingDown) {
+    console.log('Already shutting down...');
+    return;
+  }
+  
+  isShuttingDown = true;
+  console.log(`${signal} received, shutting down gracefully`);
+  
+  // Give some time for active connections to finish
+  setTimeout(() => {
+    server.close(() => {
+      console.log('HTTP server closed');
+      sequelize.close()
+        .then(() => {
+          console.log('Database connection closed');
+          process.exit(0);
+        })
+        .catch(err => {
+          console.error('Error closing database:', err);
+          process.exit(1);
+        });
     });
-  });
-});
+  }, 5000); // Wait 5 seconds before closing
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
+  // Don't exit on uncaught exceptions in production
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit on unhandled rejections in production
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 });
 
-// Database connection in background
+// Database connection with retry logic
+let dbConnected = false;
 async function connectDatabase() {
+  if (dbConnected) return;
+  
   try {
     // Test database connection
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully.');
     
     // Sync database
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ force: false, alter: false });
     console.log('✅ Database synchronized.');
+    
+    dbConnected = true;
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
-    console.log('🔄 Retrying in 10 seconds...');
-    setTimeout(connectDatabase, 10000);
+    console.log('🔄 Retrying database connection in 5 seconds...');
+    
+    // Retry connection
+    setTimeout(() => {
+      dbConnected = false;
+      connectDatabase();
+    }, 5000);
   }
 }
 
-// Start database connection
+// Start database connection immediately
 connectDatabase();
+
+// Keep database connection alive
+setInterval(() => {
+  if (dbConnected && !isShuttingDown) {
+    sequelize.authenticate()
+      .catch(err => {
+        console.error('Database connection lost:', err.message);
+        dbConnected = false;
+        connectDatabase();
+      });
+  }
+}, 30000); // Check every 30 seconds

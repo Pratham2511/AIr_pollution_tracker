@@ -1,6 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 
-// Database configuration
+// Database configuration with better connection handling
 const sequelize = process.env.DATABASE_URL
   ? new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
@@ -9,13 +9,19 @@ const sequelize = process.env.DATABASE_URL
         ssl: {
           require: true,
           rejectUnauthorized: false
-        }
+        },
+        connectTimeout: 60000 // 60 seconds
       },
       pool: {
+        max: 10,
+        min: 2,
+        acquire: 60000,
+        idle: 10000,
+        evict: 1000
+      },
+      retry: {
         max: 5,
-        min: 0,
-        acquire: 30000,
-        idle: 10000
+        timeout: 3000
       }
     })
   : new Sequelize(
@@ -31,13 +37,19 @@ const sequelize = process.env.DATABASE_URL
           ssl: {
             require: true,
             rejectUnauthorized: false
-          }
+          },
+          connectTimeout: 60000
         },
         pool: {
+          max: 10,
+          min: 2,
+          acquire: 60000,
+          idle: 10000,
+          evict: 1000
+        },
+        retry: {
           max: 5,
-          min: 0,
-          acquire: 30000,
-          idle: 10000
+          timeout: 3000
         }
       }
     );
