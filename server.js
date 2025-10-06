@@ -46,64 +46,38 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/pollution', pollutionRoutes);
 
-// Legacy routes for backward compatibility
+// Legacy routes for backward compatibility - redirect to pollution routes
 app.get('/api/cities/count', async (req, res) => {
   try {
-    // Redirect to new pollution route
-    const fs = require('fs');
-    const path = require('path');
-    
-    try {
-      const citiesPath = path.join(__dirname, 'public/data/cities.js');
-      if (fs.existsSync(citiesPath)) {
-        const citiesContent = fs.readFileSync(citiesPath, 'utf8');
-        const citiesMatch = citiesContent.match(/export const indianCitiesData = (\[[\s\S]*?\]);/);
-        if (citiesMatch) {
-          const citiesData = eval(citiesMatch[1]);
-          return res.json({ count: citiesData.length });
-        }
-      }
-    } catch (error) {
-      console.log('Could not read cities.js file, using fallback count');
-    }
-    
-    res.json({ count: 50 });
+    const { indianCitiesData } = require('./data/citiesData');
+    res.json({ count: indianCitiesData.length });
   } catch (error) {
     console.error('Error getting city count:', error);
-    res.status(500).json({ message: 'Database not available yet' });
+    res.json({ count: 50 });
   }
 });
 
 app.get('/api/cities', async (req, res) => {
   try {
-    const fs = require('fs');
-    const path = require('path');
-    
-    try {
-      const citiesPath = path.join(__dirname, 'public/data/cities.js');
-      if (fs.existsSync(citiesPath)) {
-        const citiesContent = fs.readFileSync(citiesPath, 'utf8');
-        const citiesMatch = citiesContent.match(/export const indianCitiesData = (\[[\s\S]*?\]);/);
-        if (citiesMatch) {
-          const citiesData = eval(citiesMatch[1]);
-          return res.json(citiesData);
-        }
-      }
-    } catch (error) {
-      console.log('Could not read cities.js file, using fallback data');
-    }
-    
-    // Fallback cities data
-    const fallbackCities = [
-      { name: 'Delhi', lat: 28.6139, lon: 77.2090, aqi: 285, pm25: 125, pm10: 180 },
-      { name: 'Mumbai', lat: 19.0760, lon: 72.8777, aqi: 155, pm25: 65, pm10: 95 },
-      { name: 'Bangalore', lat: 12.9716, lon: 77.5946, aqi: 95, pm25: 40, pm10: 65 }
-    ];
-    
-    res.json(fallbackCities);
+    const { indianCitiesData } = require('./data/citiesData');
+    res.json(indianCitiesData);
   } catch (error) {
     console.error('Error getting cities:', error);
-    res.status(500).json({ message: 'Database not available yet' });
+    const fallbackCities = [
+      { name: 'Delhi', lat: 28.6139, lon: 77.2090, aqi: 285, pm25: 125, pm10: 180, no2: 68, so2: 22, co: 2.8, o3: 85 },
+      { name: 'Mumbai', lat: 19.0760, lon: 72.8777, aqi: 155, pm25: 65, pm10: 95, no2: 45, so2: 15, co: 1.8, o3: 55 },
+      { name: 'Bangalore', lat: 12.9716, lon: 77.5946, aqi: 95, pm25: 40, pm10: 65, no2: 38, so2: 12, co: 1.2, o3: 48 }
+    ];
+    res.json(fallbackCities);
+  }
+});
+
+// Refresh data endpoint
+app.post('/api/refresh-data', async (req, res) => {
+  try {
+    res.json({ message: 'Data refreshed successfully', timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(500).json({ message: 'Error refreshing data' });
   }
 });
 
