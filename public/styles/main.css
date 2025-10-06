@@ -23,7 +23,7 @@
         rgba(118, 75, 162, 0.05) 50%, 
         rgba(240, 147, 251, 0.05) 100%);
     background-size: 400% 400%;
-    animation: gradient 25s ease infinite;
+    animation: gradient 20s ease infinite;
     padding: 2.5rem;
     border-radius: 20px;
     min-height: 100vh;
@@ -140,7 +140,9 @@
 
 /* Navigation */
 .navbar {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) !important;
+    background-size: 400% 400%;
+    animation: gradient 20s ease infinite;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     border-bottom: 2px solid rgba(255, 255, 255, 0.1);
