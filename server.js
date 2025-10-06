@@ -233,64 +233,104 @@ async function connectDatabase() {
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully.');
     
-    // Sync database
-    await sequelize.sync({ force: false, alter: false });
+    // Sync database - use alter in production to fix schema issues
+    const syncOptions = {
+      force: false,
+      alter: process.env.FORCE_DB_SYNC === 'true' ? true : false
+    };
+    
+    await sequelize.sync(syncOptions);
     console.log('✅ Database synchronized.');
     
-    // Fix id sequences for all tables (PostgreSQL specific)
+    // Fix id sequences for PostgreSQL tables
     if (process.env.DATABASE_URL && sequelize.options.dialect === 'postgres') {
       try {
-        console.log('🔧 Checking and fixing table sequences...');
+        console.log('🔧 Checking table structure and fixing sequences...');
         
-        // Fix users table sequence
-        await sequelize.query(`
-          DO $$
-          BEGIN
-            -- Create sequence if it doesn't exist
-            IF NOT EXISTS (SELECT 0 FROM pg_class WHERE relname = 'users_id_seq') THEN
-              CREATE SEQUENCE users_id_seq;
-            END IF;
-            
-            -- Set sequence value to max id + 1
-            PERFORM setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
-            
-            -- Set default value for id column
-            ALTER TABLE users ALTER COLUMN id SET DEFAULT nextval('users_id_seq');
-            
-            -- Set sequence ownership
-            ALTER SEQUENCE users_id_seq OWNED BY users.id;
-          END $$;
+        // Check if tables exist and their column types
+        const [tables] = await sequelize.query(`
+          SELECT table_name 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name IN ('users', 'pollution_readings', 'tracked_cities')
         `);
         
-        // Fix pollution_readings table sequence
-        await sequelize.query(`
-          DO $$
-          BEGIN
-            IF NOT EXISTS (SELECT 0 FROM pg_class WHERE relname = 'pollution_readings_id_seq') THEN
-              CREATE SEQUENCE pollution_readings_id_seq;
-            END IF;
-            PERFORM setval('pollution_readings_id_seq', COALESCE((SELECT MAX(id) FROM pollution_readings), 0) + 1, false);
-            ALTER TABLE pollution_readings ALTER COLUMN id SET DEFAULT nextval('pollution_readings_id_seq');
-            ALTER SEQUENCE pollution_readings_id_seq OWNED BY pollution_readings.id;
-          END $$;
-        `);
-        
-        // Fix tracked_cities table sequence
-        await sequelize.query(`
-          DO $$
-          BEGIN
-            IF NOT EXISTS (SELECT 0 FROM pg_class WHERE relname = 'tracked_cities_id_seq') THEN
-              CREATE SEQUENCE tracked_cities_id_seq;
-            END IF;
-            PERFORM setval('tracked_cities_id_seq', COALESCE((SELECT MAX(id) FROM tracked_cities), 0) + 1, false);
-            ALTER TABLE tracked_cities ALTER COLUMN id SET DEFAULT nextval('tracked_cities_id_seq');
-            ALTER SEQUENCE tracked_cities_id_seq OWNED BY tracked_cities.id;
-          END $$;
-        `);
-        
-        console.log('✅ Database sequences fixed successfully.');
+        if (tables.length === 0) {
+          console.log('⚠️  Tables not found, they will be created by Sequelize');
+        } else {
+          console.log(`📊 Found ${tables.length} tables, checking structure...`);
+          
+          // Check users table id column type
+          const [usersCols] = await sequelize.query(`
+            SELECT column_name, data_type, column_default
+            FROM information_schema.columns
+            WHERE table_name = 'users' AND column_name = 'id'
+          `);
+          
+          if (usersCols.length > 0) {
+            const idCol = usersCols[0];
+            console.log(`📋 Users table id column: ${idCol.data_type}, default: ${idCol.column_default || 'none'}`);
+            
+            // If id is UUID or has no default, we need to fix it
+            if (idCol.data_type === 'uuid' || !idCol.column_default) {
+              console.log('🚨 Detected incorrect id column type or missing sequence!');
+              console.log('🔧 Fixing table structure...');
+              
+              // Drop and recreate tables with correct schema
+              await sequelize.query('DROP TABLE IF EXISTS "tracked_cities" CASCADE');
+              await sequelize.query('DROP TABLE IF EXISTS "pollution_readings" CASCADE');
+              await sequelize.query('DROP TABLE IF EXISTS "users" CASCADE');
+              
+              console.log('✅ Old tables dropped');
+              
+              // Recreate tables with correct schema
+              await sequelize.sync({ force: false, alter: false });
+              console.log('✅ Tables recreated with correct schema');
+            } else if (idCol.data_type === 'integer') {
+              // Integer type is correct, just ensure sequence exists
+              await sequelize.query(`
+                DO $$
+                BEGIN
+                  IF NOT EXISTS (SELECT 0 FROM pg_class WHERE relname = 'users_id_seq') THEN
+                    CREATE SEQUENCE users_id_seq;
+                    ALTER TABLE users ALTER COLUMN id SET DEFAULT nextval('users_id_seq');
+                    ALTER SEQUENCE users_id_seq OWNED BY users.id;
+                    PERFORM setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
+                  END IF;
+                END $$;
+              `);
+              
+              await sequelize.query(`
+                DO $$
+                BEGIN
+                  IF NOT EXISTS (SELECT 0 FROM pg_class WHERE relname = 'pollution_readings_id_seq') THEN
+                    CREATE SEQUENCE pollution_readings_id_seq;
+                    ALTER TABLE pollution_readings ALTER COLUMN id SET DEFAULT nextval('pollution_readings_id_seq');
+                    ALTER SEQUENCE pollution_readings_id_seq OWNED BY pollution_readings.id;
+                    PERFORM setval('pollution_readings_id_seq', COALESCE((SELECT MAX(id) FROM pollution_readings), 0) + 1, false);
+                  END IF;
+                END $$;
+              `);
+              
+              await sequelize.query(`
+                DO $$
+                BEGIN
+                  IF NOT EXISTS (SELECT 0 FROM pg_class WHERE relname = 'tracked_cities_id_seq') THEN
+                    CREATE SEQUENCE tracked_cities_id_seq;
+                    ALTER TABLE tracked_cities ALTER COLUMN id SET DEFAULT nextval('tracked_cities_id_seq');
+                    ALTER SEQUENCE tracked_cities_id_seq OWNED BY tracked_cities.id;
+                    PERFORM setval('tracked_cities_id_seq', COALESCE((SELECT MAX(id) FROM tracked_cities), 0) + 1, false);
+                  END IF;
+                END $$;
+              `);
+              
+              console.log('✅ Database sequences verified and fixed');
+            }
+          }
+        }
       } catch (seqError) {
-        console.warn('⚠️  Could not fix sequences (might already be correct):', seqError.message);
+        console.error('⚠️  Error checking/fixing table structure:', seqError.message);
+        console.log('💡 You may need to manually drop and recreate tables');
       }
     }
     
