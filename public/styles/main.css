@@ -140,9 +140,10 @@
 
 /* Navigation */
 .navbar {
-    background: rgba(44, 62, 80, 0.95) !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     backdrop-filter: blur(10px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .navbar-brand {
