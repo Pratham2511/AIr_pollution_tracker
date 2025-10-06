@@ -30,7 +30,11 @@
 
 ## 🔧 What You Need to Do
 
-### For Local Development:
+### ⚠️ IMPORTANT: .env File is ONLY for Local Development
+
+**For Render/Production:** You do NOT need a `.env` file! Environment variables are set in the Render dashboard.
+
+### For Local Development Only:
 
 1. **Create `.env` file:**
    ```bash
