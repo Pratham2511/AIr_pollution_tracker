@@ -64,12 +64,6 @@ body::before {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     padding: 12px 0;
-    transition: all 0.3s ease;
-}
-
-.navbar:hover {
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
 body {
@@ -88,12 +82,6 @@ body {
     color: transparent;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
     line-height: 1.2;
-    animation: shimmer 3s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-    0%, 100% { filter: brightness(1); }
-    50% { filter: brightness(1.2); }
 }
 
 .navbar-brand small {
