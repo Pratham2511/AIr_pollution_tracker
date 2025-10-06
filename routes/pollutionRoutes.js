@@ -12,6 +12,16 @@ router.get('/cities/count', generalLimiter, pollutionController.getCitiesCount);
 // Get cities data (public endpoint for frontend)
 router.get('/cities', generalLimiter, pollutionController.getCities);
 
+// Refresh data endpoint (for frontend refresh button)
+router.post('/refresh-data', generalLimiter, guestAuth, async (req, res) => {
+  try {
+    // Just return success - data is static for now
+    res.json({ message: 'Data refreshed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error refreshing data' });
+  }
+});
+
 // Get latest pollution reading by city (public endpoint)
 router.get('/latest', generalLimiter, guestAuth, pollutionController.getLatestPollutionByCity);
 
