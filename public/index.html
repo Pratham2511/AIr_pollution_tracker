@@ -707,6 +707,7 @@
     <!-- Cities Data -->
     <script type="module">
         import { indianCitiesData } from './data/cities.js';
+        console.log('ES6 Module loaded - Cities data:', indianCitiesData ? indianCitiesData.length : 'undefined');
         window.indianCitiesData = indianCitiesData;
     </script>
     
@@ -719,6 +720,7 @@
         const waitForCitiesData = setInterval(() => {
             if (window.indianCitiesData) {
                 citiesData = window.indianCitiesData;
+                console.log('Cities data loaded successfully:', citiesData.length, 'cities');
                 clearInterval(waitForCitiesData);
             }
         }, 100);
@@ -986,6 +988,8 @@
             const citiesContainer = document.getElementById('pollutionCards');
             let cities = JSON.parse(localStorage.getItem('trackedCities')) || [];
             
+            console.log('Display Tracked Cities - Found:', cities.length, 'cities in localStorage');
+            
             // Update user tracked cities count
             updateUserTrackedCitiesCount(cities.length);
             
@@ -1122,6 +1126,8 @@
             
             // For authenticated users, use the imported cities data
             const cities = citiesData.length > 0 ? citiesData : window.indianCitiesData || [];
+            
+            console.log('Add Random City - Cities data available:', cities.length);
             
             if (cities.length === 0) {
                 alert('Cities data not loaded yet. Please try again.');
