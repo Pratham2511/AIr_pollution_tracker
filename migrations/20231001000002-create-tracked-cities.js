@@ -4,6 +4,10 @@ module.exports = {
 			return;
 		}
 
+		const defaultTimestamp = queryInterface.sequelize.getDialect() === 'sqlite'
+			? Sequelize.literal('CURRENT_TIMESTAMP')
+			: queryInterface.sequelize.fn('NOW');
+
 		await queryInterface.createTable('analytics_refresh_log', {
 			id: {
 				allowNull: false,
@@ -14,7 +18,7 @@ module.exports = {
 			refreshedAt: {
 				allowNull: false,
 				type: Sequelize.DATE,
-				defaultValue: queryInterface.sequelize.fn('NOW')
+				defaultValue: defaultTimestamp
 			},
 			durationMs: {
 				allowNull: true,

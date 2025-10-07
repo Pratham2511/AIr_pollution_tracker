@@ -9,6 +9,21 @@ const state = {
   charts: {},
   map: null,
   markers: [],
+  markerRenderToken: null,
+};
+
+const showSkeleton = (id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('hidden');
+  el.setAttribute('aria-hidden', 'false');
+};
+
+const hideSkeleton = (id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('hidden');
+  el.setAttribute('aria-hidden', 'true');
 };
 
 const CATEGORY_COLORS = {
@@ -19,6 +34,166 @@ const CATEGORY_COLORS = {
   very_unhealthy: '#a855f7',
   hazardous: '#0f172a',
 };
+
+const Toast = (() => {
+  const VARIANTS = {
+    info: { icon: 'ℹ️', defaultTitle: 'Heads up' },
+    success: { icon: '✅', defaultTitle: 'Success' },
+    warning: { icon: '⚠️', defaultTitle: 'Notice' },
+    error: { icon: '✖️', defaultTitle: 'Something went wrong' },
+    neutral: { icon: '•', defaultTitle: '' },
+  };
+
+  let container;
+
+  const ensureContainer = () => {
+    if (container) return container;
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    container.setAttribute('role', 'status');
+    container.setAttribute('aria-live', 'polite');
+    container.setAttribute('aria-atomic', 'false');
+    document.body.appendChild(container);
+    return container;
+  };
+
+  const dismissToast = (toast) => {
+    if (!toast || toast.dataset.closing === 'true') return;
+    toast.dataset.closing = 'true';
+    toast.classList.add('toast--exit');
+    const remove = () => {
+      toast.remove();
+      if (container && container.childElementCount === 0) {
+        container.removeAttribute('aria-busy');
+      }
+    };
+    toast.addEventListener('animationend', remove, { once: true });
+    setTimeout(remove, 450);
+  };
+
+  const show = (message, options = {}) => {
+    const {
+      title,
+      variant = 'info',
+      duration = 5000,
+      dismissible = true,
+    } = options;
+
+    if (!message) return () => {};
+
+    const target = ensureContainer();
+    target.setAttribute('aria-busy', 'true');
+
+    const variantConfig = VARIANTS[variant] || VARIANTS.info;
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${variant}`;
+    const isAssertive = variant === 'error' || variant === 'warning';
+    toast.setAttribute('role', isAssertive ? 'alert' : 'status');
+    toast.setAttribute('aria-live', isAssertive ? 'assertive' : 'polite');
+    toast.setAttribute('aria-atomic', 'true');
+
+    const icon = document.createElement('div');
+    icon.className = 'toast__icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = variantConfig.icon;
+
+    const content = document.createElement('div');
+    content.className = 'toast__content';
+
+    const heading = title || variantConfig.defaultTitle;
+    if (heading) {
+      const headingEl = document.createElement('p');
+      headingEl.className = 'toast__title';
+      headingEl.textContent = heading;
+      content.appendChild(headingEl);
+    }
+
+    const messageEl = document.createElement('p');
+    messageEl.className = 'toast__message';
+    messageEl.textContent = message;
+    content.appendChild(messageEl);
+
+    toast.appendChild(icon);
+    toast.appendChild(content);
+
+    let timerId = null;
+    const clearTimer = () => {
+      if (timerId) {
+        window.clearTimeout(timerId);
+        timerId = null;
+      }
+    };
+
+    const closeToast = () => {
+      clearTimer();
+      dismissToast(toast);
+    };
+
+    if (dismissible) {
+      const closeButton = document.createElement('button');
+      closeButton.className = 'toast__close';
+      closeButton.type = 'button';
+      closeButton.setAttribute('aria-label', 'Dismiss notification');
+      closeButton.textContent = '×';
+      closeButton.addEventListener('click', closeToast);
+      toast.appendChild(closeButton);
+    }
+
+    if (duration && duration > 0) {
+      const restartTimer = (delay = duration) => {
+        clearTimer();
+        timerId = window.setTimeout(() => {
+          timerId = null;
+          dismissToast(toast);
+        }, delay);
+      };
+
+      restartTimer();
+      toast.addEventListener('mouseenter', clearTimer);
+      toast.addEventListener('mouseleave', () => {
+        if (toast.dataset.closing === 'true') return;
+        restartTimer(Math.max(1500, duration / 2));
+      });
+    }
+
+    target.appendChild(toast);
+
+    toast.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeToast();
+      }
+    });
+
+    return closeToast;
+  };
+
+  return { show };
+})();
+
+const showToast = (...args) => Toast.show(...args);
+window.airlyticsToast = showToast;
+
+const debounce = (fn, wait = 200) => {
+  let timer;
+  return (...args) => {
+    if (timer) {
+      window.clearTimeout(timer);
+    }
+    timer = window.setTimeout(() => {
+      fn(...args);
+    }, wait);
+  };
+};
+
+const MAP_SETTINGS = {
+  desktopLimit: 180,
+  mobileLimit: 90,
+  chunkSize: 45
+};
+
+const mobileMediaQuery = typeof window !== 'undefined' && window.matchMedia
+  ? window.matchMedia('(max-width: 640px)')
+  : null;
 
 const API = {
   async fetch(path, options = {}) {
@@ -90,21 +265,25 @@ const renderOverviewCards = () => {
       title: 'Cities analysed',
       value: state.cities.length,
       subtitle: 'Across India & global peers',
+      tooltip: 'Total number of active city profiles currently tracked in Airlytics.',
     },
     {
       title: 'Worst AQI now',
       value: worst ? `${worst.cityName}` : '—',
       subtitle: worst ? `AQI ${Math.round(worst.aqi)}` : 'Waiting for data',
+      tooltip: 'City with the highest AQI based on the most recent hourly reading.',
     },
     {
       title: 'Best AQI now',
       value: best ? `${best.cityName}` : '—',
       subtitle: best ? `AQI ${Math.round(best.aqi)}` : 'Waiting for data',
+      tooltip: 'City with the lowest AQI among the latest readings.',
     },
     {
       title: 'Most improved',
       value: improved ? improved.cityName : '—',
       subtitle: improved ? `${improved.trendScore.toFixed(1)} trend score` : 'Tracking change',
+      tooltip: 'Largest AQI improvement calculated over the trailing 24 hours.',
     },
   ];
 
@@ -116,6 +295,10 @@ const renderOverviewCards = () => {
       <div class="mt-3 text-2xl font-semibold text-white">${card.value}</div>
       <p class="mt-1 text-xs text-slate-400">${card.subtitle}</p>
     `;
+    element.tabIndex = 0;
+    if (card.tooltip) {
+      element.setAttribute('data-tooltip', card.tooltip);
+    }
     container.appendChild(element);
     if (window.gsap) {
       gsap.fromTo(
@@ -138,6 +321,7 @@ const renderOverviewTrend = () => {
     state.charts.overviewTrend.data.labels = labels;
     state.charts.overviewTrend.data.datasets[0].data = data;
     state.charts.overviewTrend.update();
+    hideSkeleton('overviewTrendSkeleton');
     return;
   }
 
@@ -169,6 +353,7 @@ const renderOverviewTrend = () => {
       },
     },
   });
+  hideSkeleton('overviewTrendSkeleton');
 };
 
 const renderCategoryDistribution = () => {
@@ -219,6 +404,8 @@ const renderCategoryDistribution = () => {
     `
     )
     .join('');
+  hideSkeleton('categoryChartSkeleton');
+  hideSkeleton('categoryLegendSkeleton');
 };
 
 const renderRegionalLeaders = () => {
@@ -235,6 +422,7 @@ const renderRegionalLeaders = () => {
     `;
     container.appendChild(row);
   });
+  hideSkeleton('regionalLeadersSkeleton');
 };
 
 const createSearchList = (cities) =>
@@ -261,10 +449,11 @@ const renderSearchResults = (cities) => {
   const list = document.getElementById('citySearchResults');
   if (!list) return;
   list.innerHTML = createSearchList(cities);
+  hideSkeleton('citySearchSkeleton');
 };
 
-const handleSearchInput = (event) => {
-  const query = event.target.value.trim().toLowerCase();
+const applySearchFilter = (inputValue = '') => {
+  const query = inputValue.trim().toLowerCase();
   if (!query) {
     renderSearchResults(state.cities);
     return;
@@ -277,6 +466,8 @@ const handleSearchInput = (event) => {
 
   renderSearchResults(filtered);
 };
+
+const debouncedSearchInput = debounce(value => applySearchFilter(value), 220);
 
 const updateTrackedDisplay = () => {
   const summary = document.getElementById('trackedSummary');
@@ -302,6 +493,7 @@ const updateTrackedDisplay = () => {
       </li>
     `)
     .join('');
+  hideSkeleton('trackedListSkeleton');
 };
 
 const toggleTrackedCity = (slug) => {
@@ -309,7 +501,10 @@ const toggleTrackedCity = (slug) => {
     state.tracked.delete(slug);
   } else {
     if (state.userType === 'guest' && state.tracked.size >= 3) {
-      alert('Guest sessions can track up to 3 cities. Register to unlock unlimited tracking.');
+      showToast('Guest sessions can track up to 3 cities. Register to unlock unlimited tracking.', {
+        variant: 'warning',
+        title: 'Guest limit reached',
+      });
       return;
     }
     state.tracked.add(slug);
@@ -329,9 +524,11 @@ const updateTrackButton = () => {
   if (state.tracked.has(slug)) {
     button.textContent = 'Remove from tracked';
     button.onclick = () => toggleTrackedCity(slug);
+    button.setAttribute('data-tooltip', 'Remove this city from your tracked list');
   } else {
     button.textContent = 'Track this city';
     button.onclick = () => toggleTrackedCity(slug);
+    button.setAttribute('data-tooltip', 'Add this city to your tracked list for quick access');
   }
 };
 
@@ -478,8 +675,9 @@ const renderCityDetail = (analytics) => {
 
   if (!content || !skeleton) return;
 
-  skeleton.classList.add('hidden');
+  hideSkeleton('cityDetailSkeleton');
   content.classList.remove('hidden');
+  content.setAttribute('aria-hidden', 'false');
 
   name.textContent = analytics.city.name;
   subtitle.textContent = `${analytics.city.country} · ${analytics.city.region || '—'}`;
@@ -506,8 +704,16 @@ const renderCityDetail = (analytics) => {
 };
 
 const selectCity = async (slug) => {
+  const previousSelection = state.selectedCity;
   try {
     document.body.classList.add('cursor-progress');
+    const skeleton = document.getElementById('cityDetailSkeleton');
+    const content = document.getElementById('cityDetailContent');
+    if (skeleton && content) {
+      showSkeleton('cityDetailSkeleton');
+      content.classList.add('hidden');
+      content.setAttribute('aria-hidden', 'true');
+    }
     const analytics = await API.fetch(`/api/analytics/cities/${slug}/analytics`);
     state.selectedCity = analytics;
     renderCityDetail(analytics);
@@ -521,49 +727,124 @@ const selectCity = async (slug) => {
     }
   } catch (error) {
     console.error('Failed to load city analytics', error);
-    alert('Unable to load analytics for this city. Please try another one.');
+    showToast('Unable to load analytics for this city. Please try another one.', {
+      variant: 'error',
+      title: 'Analytics unavailable',
+    });
+    if (previousSelection) {
+      renderCityDetail(previousSelection);
+    } else {
+      hideSkeleton('cityDetailSkeleton');
+    }
   } finally {
     document.body.classList.remove('cursor-progress');
   }
 };
 
-const setupMap = () => {
-  const mapContainer = document.getElementById('cityMap');
-  if (!mapContainer) return;
+const clearMapMarkers = () => {
+  if (state.markers.length) {
+    state.markers.forEach(marker => marker.remove());
+    state.markers = [];
+  }
+};
+
+const getMarkerLimit = () => (mobileMediaQuery && mobileMediaQuery.matches
+  ? MAP_SETTINGS.mobileLimit
+  : MAP_SETTINGS.desktopLimit);
+
+const ensureMapInstance = () => {
+  const container = document.getElementById('cityMap');
+  if (!container) {
+    return null;
+  }
 
   if (!state.map) {
     state.map = L.map('cityMap', {
       zoomControl: false,
-      scrollWheelZoom: false,
+      scrollWheelZoom: false
     }).setView([20.5937, 78.9629], 4);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
-      attribution: '&copy; OpenStreetMap contributors',
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(state.map);
 
     L.control.zoom({ position: 'bottomright' }).addTo(state.map);
   }
 
-  state.markers.forEach(marker => marker.remove());
-  state.markers = state.cities.slice(0, 200).map(city => {
-    const marker = L.circleMarker([city.latitude, city.longitude], {
-      radius: 6,
-      color: '#38bdf8',
-      fillColor: '#38bdf8',
-      fillOpacity: 0.7,
-      weight: 1,
-    }).addTo(state.map);
+  return state.map;
+};
 
-    marker.bindPopup(`
-      <strong>${city.name}</strong><br/>
-      ${city.region || ''} ${city.country}<br/>
-      <button data-popup-city="${city.slug}" class="mt-2 inline-flex items-center gap-2 rounded-full bg-brand px-3 py-1 text-xs font-medium text-white">View analytics</button>
-    `);
+const renderCityMarkers = () => {
+  const map = ensureMapInstance();
+  if (!map) {
+    return;
+  }
 
-    marker.on('click', () => selectCity(city.slug));
-    return marker;
-  });
+  const token = Symbol('markers');
+  state.markerRenderToken = token;
+  clearMapMarkers();
+
+  const cities = state.cities.slice(0, getMarkerLimit());
+  if (!cities.length) {
+    hideSkeleton('mapSkeleton');
+    return;
+  }
+
+  const activeMarkers = [];
+
+  const addChunk = (startIndex) => {
+    if (state.markerRenderToken !== token) {
+      return;
+    }
+
+    const chunk = cities.slice(startIndex, startIndex + MAP_SETTINGS.chunkSize);
+    chunk.forEach(city => {
+      const marker = L.circleMarker([city.latitude, city.longitude], {
+        radius: 6,
+        color: '#38bdf8',
+        fillColor: '#38bdf8',
+        fillOpacity: 0.7,
+        weight: 1
+      }).addTo(map);
+
+      marker.bindPopup(`
+        <strong>${city.name}</strong><br />
+        ${city.region || ''} ${city.country}<br />
+        <button data-popup-city="${city.slug}" class="mt-2 inline-flex items-center gap-2 rounded-full bg-brand px-3 py-1 text-xs font-medium text-white">View analytics</button>
+      `);
+
+      marker.on('click', () => selectCity(city.slug));
+      activeMarkers.push(marker);
+    });
+
+    hideSkeleton('mapSkeleton');
+
+    if (startIndex + MAP_SETTINGS.chunkSize < cities.length) {
+      window.requestAnimationFrame(() => addChunk(startIndex + MAP_SETTINGS.chunkSize));
+    } else if (state.markerRenderToken === token) {
+      state.markers = activeMarkers;
+    }
+  };
+
+  window.requestAnimationFrame(() => addChunk(0));
+};
+
+const debouncedMarkerRefresh = debounce(() => renderCityMarkers(), 320);
+
+if (mobileMediaQuery?.addEventListener) {
+  mobileMediaQuery.addEventListener('change', debouncedMarkerRefresh);
+} else if (mobileMediaQuery && mobileMediaQuery.addListener) {
+  mobileMediaQuery.addListener(debouncedMarkerRefresh);
+}
+
+window.addEventListener('resize', debouncedMarkerRefresh);
+
+const setupMap = () => {
+  if (!document.getElementById('cityMap')) {
+    return;
+  }
+  renderCityMarkers();
 };
 
 const attachGlobalListeners = () => {
@@ -572,7 +853,9 @@ const attachGlobalListeners = () => {
   const trackedList = document.getElementById('trackedCityList');
 
   if (searchInput) {
-    searchInput.addEventListener('input', handleSearchInput);
+    searchInput.addEventListener('input', (event) => {
+      debouncedSearchInput(event.target.value);
+    });
   }
 
   [searchList, trackedList].forEach(list => {
@@ -618,6 +901,11 @@ const hydrateCities = async () => {
   updateTrackedDisplay();
   setupMap();
 
+  const searchInput = document.getElementById('citySearchInput');
+  if (searchInput) {
+    applySearchFilter(searchInput.value || '');
+  }
+
   if (state.tracked.size) {
     const firstTracked = [...state.tracked][0];
     selectCity(firstTracked);
@@ -634,6 +922,11 @@ const bootstrap = async () => {
     await hydrateOverview();
   } catch (error) {
     console.error('Failed to initialise dashboard', error);
+    showToast('We hit a snag while loading Airlytics. Please refresh to try again.', {
+      variant: 'error',
+      title: 'Dashboard unavailable',
+      duration: 7000,
+    });
   }
 };
 

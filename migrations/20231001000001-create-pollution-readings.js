@@ -1,5 +1,9 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
+    const defaultTimestamp = queryInterface.sequelize.getDialect() === 'sqlite'
+      ? Sequelize.literal('CURRENT_TIMESTAMP')
+      : Sequelize.fn('NOW');
+
     await queryInterface.createTable('cities', {
       id: {
         allowNull: false,
@@ -52,12 +56,12 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: defaultTimestamp
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: defaultTimestamp
       }
     });
 
@@ -141,12 +145,12 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: defaultTimestamp
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: defaultTimestamp
       }
     });
 
@@ -221,12 +225,12 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: defaultTimestamp
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: defaultTimestamp
       }
     });
 
@@ -269,12 +273,12 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: defaultTimestamp
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: defaultTimestamp
       }
     });
 
@@ -306,7 +310,7 @@ module.exports = {
       },
       otpCode: {
         allowNull: false,
-        type: Sequelize.STRING(6)
+        type: Sequelize.STRING(128)
       },
       expiresAt: {
         allowNull: false,
@@ -332,12 +336,12 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: defaultTimestamp
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: defaultTimestamp
       }
     });
 

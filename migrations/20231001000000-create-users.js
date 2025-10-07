@@ -1,5 +1,9 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
+    const timestampDefault = queryInterface.sequelize.getDialect() === 'sqlite'
+      ? Sequelize.literal('CURRENT_TIMESTAMP')
+      : Sequelize.fn('NOW');
+
     await queryInterface.createTable('users', {
       id: {
         allowNull: false,
@@ -32,12 +36,12 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: timestampDefault
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: timestampDefault
       }
     });
 

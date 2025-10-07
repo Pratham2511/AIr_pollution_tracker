@@ -17,11 +17,10 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     otpCode: {
-      type: DataTypes.STRING(6),
+      type: DataTypes.STRING(128),
       allowNull: false,
       validate: {
-        len: [6, 6],
-        isNumeric: true
+        notEmpty: true
       }
     },
     expiresAt: {

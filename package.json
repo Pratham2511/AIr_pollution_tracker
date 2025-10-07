@@ -12,7 +12,8 @@
     "build": "echo 'Build complete - static files ready'",
     "dev": "nodemon server.js",
     "migrate": "npx sequelize-cli db:migrate",
-    "seed": "npx sequelize-cli db:seed:all"
+    "seed": "npx sequelize-cli db:seed:all",
+    "test": "NODE_ENV=test jest --runInBand"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
