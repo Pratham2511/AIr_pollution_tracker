@@ -1,10 +1,20 @@
 const jwt = require('jsonwebtoken');
+
 const { User } = require('../models');
 const { sanitizeName, normalizeEmail, validatePasswordStrength } = require('../utils/security');
+const { suggestEmailCorrection } = require('../utils/email');
+const { generateAndDeliverOtp, verifyOtpCode } = require('../services/otpService');
 
-const generateToken = (id) => {
+const buildTokenPayload = (user) => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  isAdmin: user.isAdmin || false
+});
+
+const generateToken = (user) => {
   const secret = process.env.JWT_SECRET || 'default-jwt-secret-please-change-in-production';
-  return jwt.sign({ id }, secret, { expiresIn: '24h' });
+  return jwt.sign(buildTokenPayload(user), secret, { expiresIn: '24h' });
 };
 
 exports.register = async (req, res) => {
@@ -12,12 +22,11 @@ exports.register = async (req, res) => {
     const { name, email, password } = req.body;
     const sanitizedName = sanitizeName(name);
     const normalizedEmail = normalizeEmail(email);
-    
-    // Validate input
+
     if (!sanitizedName || !normalizedEmail || !password) {
       return res.status(400).json({ message: 'Please provide name, email, and password' });
     }
-    
+
     const strengthCheck = validatePasswordStrength(password, {
       email: normalizedEmail,
       name: sanitizedName
@@ -30,31 +39,22 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ where: { email: normalizedEmail } });
     if (existingUser) {
       return res.status(409).json({ message: 'User already exists with this email' });
     }
-    
-    // Create new user
+
     const user = await User.create({ name: sanitizedName, email: normalizedEmail, password });
-    
-    // Generate token
-    const token = generateToken(user.id);
-    
+    const token = generateToken(user);
+
     res.status(201).json({
       message: 'User registered successfully',
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        isAdmin: user.isAdmin
-      }
+      user: buildTokenPayload(user)
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error during registration',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -65,41 +65,89 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const normalizedEmail = normalizeEmail(email);
-    
-    // Validate input
+    const suggestion = suggestEmailCorrection(normalizedEmail);
+
     if (!normalizedEmail || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
-    
-    // Find user by email
+
     const user = await User.findOne({ where: { email: normalizedEmail } });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({
+        message: 'Invalid credentials',
+        ...(suggestion ? { emailSuggestion: suggestion } : {})
+      });
     }
-    
-    // Check password
+
     const isPasswordValid = await user.validatePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-    
-    // Generate token
-    const token = generateToken(user.id);
-    
-    res.json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        isAdmin: user.isAdmin
-      }
+
+    const otpResult = await generateAndDeliverOtp({
+      email: normalizedEmail,
+      userId: user.id,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
     });
+
+    const response = {
+      message: 'OTP sent to your email address',
+      otpRequired: true,
+      expiresAt: otpResult.expiresAt,
+      delivery: otpResult.delivery,
+      ...(suggestion ? { emailSuggestion: suggestion } : {}),
+      user: {
+        email: user.email,
+        name: user.name
+      }
+    };
+
+    if (otpResult.otp) {
+      response.testOtp = otpResult.otp;
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error during login',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  try {
+    const normalizedEmail = normalizeEmail(req.body.email);
+    const { otp } = req.body;
+
+    const verification = await verifyOtpCode({ email: normalizedEmail, otp });
+
+    if (!verification.success) {
+      return res.status(400).json({
+        message: verification.message,
+        code: verification.reason
+      });
+    }
+
+    const user = verification.user || await User.findOne({ where: { email: normalizedEmail } });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found for verified email.' });
+    }
+
+    const token = generateToken(user);
+
+    res.json({
+      message: 'OTP verified successfully',
+      token,
+      user: buildTokenPayload(user)
+    });
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    res.status(500).json({
+      message: 'Server error verifying OTP',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -110,11 +158,11 @@ exports.getMe = async (req, res) => {
     const user = await User.findByPk(req.user.id, {
       attributes: { exclude: ['password'] }
     });
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     res.json({ user });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

@@ -58,10 +58,7 @@ const validateUserLogin = [
 ];
 
 const validatePollutionReading = [
-  body('city').notEmpty().withMessage('City is required'),
-  body('country').notEmpty().withMessage('Country is required'),
-  body('lat').isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90'),
-  body('lng').isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180'),
+  body('cityId').isInt({ min: 1 }).withMessage('cityId is required'),
   body('aqi').isInt({ min: 0, max: 500 }).withMessage('AQI must be between 0 and 500'),
   body('pm25').isFloat({ min: 0 }).withMessage('PM2.5 must be a positive number'),
   body('pm10').isFloat({ min: 0 }).withMessage('PM10 must be a positive number'),
@@ -69,11 +66,26 @@ const validatePollutionReading = [
   body('o3').isFloat({ min: 0 }).withMessage('O3 must be a positive number'),
   body('so2').isFloat({ min: 0 }).withMessage('SO2 must be a positive number'),
   body('co').isFloat({ min: 0 }).withMessage('CO must be a positive number'),
+  body('recordedAt').optional().isISO8601().withMessage('recordedAt must be a valid ISO date'),
+  handleValidationErrors
+];
+
+const validateOtpVerification = [
+  body('email')
+    .exists({ checkFalsy: true }).withMessage('Email is required')
+    .bail()
+    .customSanitizer(value => normalizeEmail(value))
+    .isEmail().withMessage('Please provide a valid email address'),
+  body('otp')
+    .exists({ checkFalsy: true }).withMessage('OTP code is required')
+    .isLength({ min: 6, max: 6 }).withMessage('OTP must be a 6-digit code')
+    .isNumeric().withMessage('OTP must contain only digits'),
   handleValidationErrors
 ];
 
 module.exports = {
   validateUserRegistration,
   validateUserLogin,
-  validatePollutionReading
+  validatePollutionReading,
+  validateOtpVerification
 };

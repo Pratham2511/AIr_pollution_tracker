@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const compression = require('compression');
 const cors = require('cors');
-const { sequelize } = require('./models');
+const { sequelize, City, PollutionReading } = require('./models');
 
 // Validate critical environment variables
 if (!process.env.JWT_SECRET) {
@@ -84,6 +84,7 @@ app.use((err, req, res, next) => {
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const pollutionRoutes = require('./routes/pollutionRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 // Health check - respond even if database is not connected
 app.get('/health', (req, res) => {
@@ -98,36 +99,47 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/pollution', pollutionRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Legacy routes for backward compatibility - redirect to pollution routes
 app.get('/api/cities/count', async (req, res) => {
   try {
-    const { indianCitiesData } = require('./data/citiesData');
-    res.json({ count: indianCitiesData.length });
+    const count = await City.count();
+    res.json({ count });
   } catch (error) {
     console.error('Error getting city count:', error);
-    res.json({ count: 50 });
+    res.json({ count: 0 });
   }
 });
 
 app.get('/api/cities', async (req, res) => {
   try {
-    const { indianCitiesData } = require('./data/citiesData');
-    res.json(indianCitiesData);
+    const cities = await City.findAll({
+      attributes: ['id', 'name', 'slug', 'country', 'region', 'latitude', 'longitude', 'isIndian'],
+      order: [['name', 'ASC']],
+      limit: 500
+    });
+    res.json({
+      count: cities.length,
+      cities
+    });
   } catch (error) {
     console.error('Error getting cities:', error);
-    const fallbackCities = [
-      { name: 'Delhi', lat: 28.6139, lon: 77.2090, aqi: 285, pm25: 125, pm10: 180, no2: 68, so2: 22, co: 2.8, o3: 85 },
-      { name: 'Mumbai', lat: 19.0760, lon: 72.8777, aqi: 155, pm25: 65, pm10: 95, no2: 45, so2: 15, co: 1.8, o3: 55 },
-      { name: 'Bangalore', lat: 12.9716, lon: 77.5946, aqi: 95, pm25: 40, pm10: 65, no2: 38, so2: 12, co: 1.2, o3: 48 }
-    ];
-    res.json(fallbackCities);
+    res.status(500).json({ message: 'Error fetching cities' });
   }
 });
 
 // Refresh data endpoint
 app.post('/api/refresh-data', async (req, res) => {
   try {
+    if (sequelize.getDialect() === 'postgres') {
+      try {
+        await sequelize.query('SELECT refresh_city_pollution_analytics()');
+      } catch (refreshError) {
+        console.warn('Analytics refresh function unavailable:', refreshError.message);
+      }
+    }
+
     res.json({ message: 'Data refreshed successfully', timestamp: new Date().toISOString() });
   } catch (error) {
     res.status(500).json({ message: 'Error refreshing data' });
@@ -137,18 +149,31 @@ app.post('/api/refresh-data', async (req, res) => {
 // Guest API for random city data
 app.get('/api/guest/random-city', async (req, res) => {
   try {
-    // Sample cities data for guest users
-    const sampleCities = [
-      { name: 'Delhi', aqi: 285, pm25: 125, pm10: 180, lat: 28.6139, lon: 77.2090 },
-      { name: 'Mumbai', aqi: 155, pm25: 65, pm10: 95, lat: 19.0760, lon: 72.8777 },
-      { name: 'Bangalore', aqi: 95, pm25: 40, pm10: 65, lat: 12.9716, lon: 77.5946 }
-    ];
-    
-    const randomCity = sampleCities[Math.floor(Math.random() * sampleCities.length)];
-    
+    const city = await City.findOne({
+      order: sequelize.random()
+    });
+
+    if (!city) {
+      return res.status(404).json({ success: false, message: 'No cities available' });
+    }
+
+    const latestReading = await PollutionReading.findOne({
+      where: { cityId: city.id },
+      order: [['recordedAt', 'DESC']]
+    });
+
     res.json({
       success: true,
-      city: randomCity
+      city: {
+        id: city.id,
+        name: city.name,
+        slug: city.slug,
+        latitude: city.latitude,
+        longitude: city.longitude,
+        aqi: latestReading?.aqi || null,
+        pm25: latestReading?.pm25 || null,
+        pm10: latestReading?.pm10 || null
+      }
     });
   } catch (error) {
     console.error('Error fetching guest city:', error);

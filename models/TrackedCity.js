@@ -5,38 +5,28 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
-    cityName: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-        len: [1, 100]
-      }
-    },
-    latitude: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-      validate: {
-        min: -90,
-        max: 90
-      }
-    },
-    longitude: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-      validate: {
-        min: -180,
-        max: 180
-      }
-    },
     userId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id'
-      },
-      onDelete: 'CASCADE'
+      allowNull: false
+    },
+    cityId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    alias: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        len: [0, 120]
+      }
+    },
+    notificationThreshold: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 0,
+        max: 500
+      }
     }
   }, {
     tableName: 'tracked_cities',
@@ -44,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
     indexes: [
       {
         unique: true,
-        fields: ['userId', 'cityName']
+        fields: ['userId', 'cityId']
       }
     ]
   });

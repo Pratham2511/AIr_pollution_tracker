@@ -78,20 +78,35 @@ if (isTestEnv || isSqliteUrl) {
 
 // Import models
 const User = require('./User')(sequelize, DataTypes);
+const OtpToken = require('./OtpToken')(sequelize, DataTypes);
+const City = require('./City')(sequelize, DataTypes);
 const PollutionReading = require('./PollutionReading')(sequelize, DataTypes);
+const CityDailySummary = require('./CityDailySummary')(sequelize, DataTypes);
 const TrackedCity = require('./TrackedCity')(sequelize, DataTypes);
 
 // Define associations
-User.hasMany(PollutionReading, { foreignKey: 'userId', as: 'pollutionReadings' });
-PollutionReading.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-
 User.hasMany(TrackedCity, { foreignKey: 'userId', as: 'trackedCities' });
 TrackedCity.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+User.hasMany(OtpToken, { foreignKey: 'userId', as: 'otpTokens' });
+OtpToken.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+City.hasMany(PollutionReading, { foreignKey: 'cityId', as: 'readings' });
+PollutionReading.belongsTo(City, { foreignKey: 'cityId', as: 'city' });
+
+City.hasMany(CityDailySummary, { foreignKey: 'cityId', as: 'dailySummaries' });
+CityDailySummary.belongsTo(City, { foreignKey: 'cityId', as: 'city' });
+
+City.hasMany(TrackedCity, { foreignKey: 'cityId', as: 'subscriptions' });
+TrackedCity.belongsTo(City, { foreignKey: 'cityId', as: 'city' });
 
 // Export models and sequelize
 module.exports = {
   sequelize,
   User,
+  OtpToken,
+  City,
   PollutionReading,
+  CityDailySummary,
   TrackedCity
 };

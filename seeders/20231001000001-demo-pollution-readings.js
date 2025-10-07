@@ -1,96 +1,42 @@
+const { generateSeedData } = require('../utils/dataGenerator');
+
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
-    await queryInterface.bulkInsert('pollution_readings', [
-      {
-        city: 'Delhi',
-        country: 'India',
-        lat: 28.7041,
-        lng: 77.1025,
-        aqi: 156,
-        pm25: 65.4,
-        pm10: 110.2,
-        no2: 42.1,
-        o3: 78.3,
-        so2: 18.7,
-        co: 1.2,
-        recordedAt: new Date(),
-        userId: 1,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        city: 'Mumbai',
-        country: 'India',
-        lat: 19.0760,
-        lng: 72.8777,
-        aqi: 89,
-        pm25: 35.2,
-        pm10: 65.8,
-        no2: 28.5,
-        o3: 45.2,
-        so2: 12.4,
-        co: 0.8,
-        recordedAt: new Date(),
-        userId: 1,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        city: 'Kolkata',
-        country: 'India',
-        lat: 22.5726,
-        lng: 88.3639,
-        aqi: 142,
-        pm25: 58.7,
-        pm10: 95.3,
-        no2: 38.9,
-        o3: 67.4,
-        so2: 15.6,
-        co: 1.0,
-        recordedAt: new Date(),
-        userId: 1,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        city: 'Chennai',
-        country: 'India',
-        lat: 13.0827,
-        lng: 80.2707,
-        aqi: 76,
-        pm25: 32.1,
-        pm10: 58.4,
-        no2: 24.7,
-        o3: 42.3,
-        so2: 10.8,
-        co: 0.7,
-        recordedAt: new Date(),
-        userId: 1,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        city: 'Bangalore',
-        country: 'India',
-        lat: 12.9716,
-        lng: 77.5946,
-        aqi: 92,
-        pm25: 38.9,
-        pm10: 72.6,
-        no2: 31.2,
-        o3: 56.8,
-        so2: 13.5,
-        co: 0.9,
-        recordedAt: new Date(),
-        userId: 1,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ], {});
+  up: async (queryInterface) => {
+    const { cities, pollutionReadings, dailySummaries } = generateSeedData({
+      targetCities: 180,
+      hours: 96,
+      days: 7
+    });
+
+    await queryInterface.bulkInsert('cities', cities);
+    await queryInterface.bulkInsert('pollution_readings', pollutionReadings);
+    await queryInterface.bulkInsert('city_daily_summaries', dailySummaries);
+
+    const trackedCities = cities.slice(0, 6).map((city, index) => ({
+      userId: 1,
+      cityId: city.id,
+      alias: index === 0 ? 'Home City' : null,
+      notificationThreshold: 200,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }));
+
+    if (trackedCities.length) {
+      await queryInterface.bulkInsert('tracked_cities', trackedCities);
+    }
+
+    if (queryInterface.sequelize.getDialect() === 'postgres') {
+      await queryInterface.sequelize.query(`SELECT setval('cities_id_seq', (SELECT MAX(id) FROM cities))`);
+      await queryInterface.sequelize.query(`SELECT setval('pollution_readings_id_seq', (SELECT MAX(id) FROM pollution_readings))`);
+      await queryInterface.sequelize.query(`SELECT setval('city_daily_summaries_id_seq', (SELECT MAX(id) FROM city_daily_summaries))`);
+      await queryInterface.sequelize.query(`SELECT setval('tracked_cities_id_seq', (SELECT MAX(id) FROM tracked_cities))`);
+    }
   },
-  down: async (queryInterface, Sequelize) => {
-    await queryInterface.bulkDelete('pollution_readings', {
-      city: ['Delhi', 'Mumbai', 'Kolkata', 'Chennai', 'Bangalore']
-    }, {});
+
+  down: async (queryInterface) => {
+    await queryInterface.bulkDelete('tracked_cities', null, {});
+    await queryInterface.bulkDelete('city_daily_summaries', null, {});
+    await queryInterface.bulkDelete('pollution_readings', null, {});
+    await queryInterface.bulkDelete('cities', null, {});
   }
 };

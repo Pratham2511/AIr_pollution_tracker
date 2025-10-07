@@ -5,34 +5,14 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
-    city: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-        len: [1, 100]
-      }
+    cityId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
     },
-    country: {
-      type: DataTypes.STRING,
+    recordedAt: {
+      type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: 'India'
-    },
-    lat: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-      validate: {
-        min: -90,
-        max: 90
-      }
-    },
-    lng: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-      validate: {
-        min: -180,
-        max: 180
-      }
+      defaultValue: DataTypes.NOW
     },
     aqi: {
       type: DataTypes.INTEGER,
@@ -42,12 +22,30 @@ module.exports = (sequelize, DataTypes) => {
         max: 500
       }
     },
+    aqiCategory: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        isIn: [[
+          'good',
+          'moderate',
+          'unhealthy_sensitive',
+          'unhealthy',
+          'very_unhealthy',
+          'hazardous'
+        ]]
+      }
+    },
+    dominantPollutant: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     pm25: {
       type: DataTypes.FLOAT,
       allowNull: false,
       validate: {
         min: 0,
-        max: 1000
+        max: 500
       }
     },
     pm10: {
@@ -55,7 +53,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       validate: {
         min: 0,
-        max: 1000
+        max: 600
       }
     },
     no2: {
@@ -63,7 +61,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       validate: {
         min: 0,
-        max: 1000
+        max: 400
       }
     },
     so2: {
@@ -71,7 +69,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       validate: {
         min: 0,
-        max: 1000
+        max: 300
       }
     },
     co: {
@@ -79,7 +77,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       validate: {
         min: 0,
-        max: 100
+        max: 60
       }
     },
     o3: {
@@ -87,25 +85,40 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       validate: {
         min: 0,
-        max: 1000
+        max: 400
       }
     },
-    recordedAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW
+    temperature: {
+      type: DataTypes.FLOAT,
+      allowNull: true
     },
-    userId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: 'users',
-        key: 'id'
-      },
-      onDelete: 'CASCADE'
+    humidity: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    },
+    windSpeed: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    },
+    dataSource: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'synthetic-model'
     }
   }, {
     tableName: 'pollution_readings',
-    timestamps: true
+    timestamps: true,
+    indexes: [
+      {
+        fields: ['cityId', 'recordedAt']
+      },
+      {
+        fields: ['recordedAt']
+      },
+      {
+        fields: ['aqiCategory']
+      }
+    ]
   });
 
   return PollutionReading;
