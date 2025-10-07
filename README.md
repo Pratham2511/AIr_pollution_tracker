@@ -222,9 +222,15 @@ DB_HOST=your_database_host
 DB_NAME=your_database_name
 DB_USER=your_database_user
 DB_PASSWORD=your_database_password
+DB_PORT=5432
+DB_POOL_MAX=5
 JWT_SECRET=your_super_secret_key
+JWT_EXPIRY=24h
 BCRYPT_SALT_ROUNDS=12
-PORT=3000
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=100
+PORT=10000
 ```
 
 ### 🔐 Security & Access Rules
