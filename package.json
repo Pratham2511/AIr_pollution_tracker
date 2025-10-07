@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "NODE_ENV=production node server.js",
-    "build": "echo 'Build complete - static files ready'",
+    "build": "npm run build:css && echo 'Build complete - static files ready'",
+    "build:css": "tailwindcss -i ./public/styles/tailwind.input.css -o ./public/styles/tailwind.generated.css --minify",
     "dev": "nodemon server.js",
     "migrate": "npx sequelize-cli db:migrate",
     "seed": "npx sequelize-cli db:seed:all",
@@ -34,7 +35,8 @@
     "nodemon": "^3.0.1",
     "sequelize-cli": "^6.6.1",
     "sqlite3": "^5.1.7",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.3",
+    "tailwindcss": "^3.4.13"
   },
   "jest": {
     "testEnvironment": "node",

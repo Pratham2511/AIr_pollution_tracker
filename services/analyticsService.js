@@ -13,6 +13,26 @@ const average = (values = []) => {
 
 const sum = (values = []) => values.reduce((total, value) => total + value, 0);
 
+const buildEmptyOverview = () => ({
+  cities: [],
+  averagePollutants: {
+    pm25: 0,
+    pm10: 0,
+    co: 0,
+    no2: 0,
+    so2: 0,
+    o3: 0
+  },
+  categoryDistribution: {},
+  regionalCorrelation: [],
+  rankings: {
+    worst: null,
+    best: null,
+    mostImproved: []
+  },
+  threeDayAggregateChange: []
+});
+
 const getCityAnalytics = async (slug) => {
   const city = await City.findOne({ where: { slug } });
   if (!city) {
@@ -133,15 +153,18 @@ const buildOverallAnalytics = async (cityIds) => {
   });
 
   if (!cities.length) {
-    return null;
+    return buildEmptyOverview();
   }
 
-  const summaries = await CityDailySummary.findAll({
-    where: {
-      cityId: { [Op.in]: cities.map(city => city.id) }
-    },
-    order: [['summaryDate', 'DESC']]
-  });
+  const cityIdsForSummaries = cities.map(city => city.id);
+  const summaries = cityIdsForSummaries.length
+    ? await CityDailySummary.findAll({
+        where: {
+          cityId: { [Op.in]: cityIdsForSummaries }
+        },
+        order: [['summaryDate', 'DESC']]
+      })
+    : [];
 
   const latestSummaryByCity = new Map();
   summaries.forEach(summary => {
