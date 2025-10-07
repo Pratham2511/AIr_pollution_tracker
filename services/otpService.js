@@ -5,13 +5,14 @@ const OTP_EXPIRY_MINUTES = OTP_EXPIRY_MS / 1000 / 60;
 
 const generateAndDeliverOtp = async ({ email }) => {
   try {
-    const { expiresAt, code } = await issueOtp(email);
+    const { expiresAt, code, delivery, fallback } = await issueOtp(email);
 
     return {
       otpTokenId: null,
       expiresAt,
-      delivery: { delivered: true },
-      otp: code
+      delivery,
+      otp: code,
+      fallback
     };
   } catch (error) {
     console.error('Failed to send OTP email via SMTP:', error.message);

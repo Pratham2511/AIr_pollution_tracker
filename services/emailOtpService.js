@@ -3,6 +3,15 @@ const crypto = require('crypto');
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
+function shouldAllowFallback() {
+  if (typeof process.env.ALLOW_OTP_FALLBACK !== 'undefined') {
+    return process.env.ALLOW_OTP_FALLBACK === 'true';
+  }
+
+  // Default to allowing fallback so development and demo environments remain usable
+  return true;
+}
+
 // In-memory store to keep OTP records keyed by email
 // Each record stores: { code: string, expiresAt: number, timeout: NodeJS.Timeout }
 const otpStore = new Map();
@@ -18,18 +27,9 @@ function generateOtp() {
  * Lazily instantiates and returns a nodemailer transporter configured for Outlook/Hotmail SMTP.
  */
 function createTransporter() {
-  const { EMAIL_USER, EMAIL_PASS, NODE_ENV } = process.env;
+  const { EMAIL_USER, EMAIL_PASS } = process.env;
 
   if (!EMAIL_USER || !EMAIL_PASS) {
-    if (NODE_ENV === 'test') {
-      console.warn('SMTP credentials missing in test environment. Falling back to mock transporter.');
-      return {
-        async sendMail() {
-          return Promise.resolve();
-        }
-      };
-    }
-
     throw new Error('Email credentials are not configured. Set EMAIL_USER and EMAIL_PASS in environment variables.');
   }
 
@@ -76,11 +76,27 @@ function persistOtp(email, code) {
  * Sends OTP email to the recipient using nodemailer.
  */
 async function sendOtpEmail(email, code) {
+  const { EMAIL_USER, EMAIL_PASS } = process.env;
+  const fallbackAllowed = shouldAllowFallback();
+
+  if (!EMAIL_USER || !EMAIL_PASS) {
+    const message = 'SMTP credentials are missing. Configure EMAIL_USER and EMAIL_PASS to enable email delivery.';
+
+    if (fallbackAllowed) {
+      console.warn('OTP email fallback in use:', message);
+      return {
+        delivered: false,
+        reason: 'missing-credentials',
+        fallback: true
+      };
+    }
+
+    throw new Error('Email credentials are not configured. Set EMAIL_USER and EMAIL_PASS in environment variables.');
+  }
+
   if (!transporter) {
     transporter = createTransporter();
   }
-
-  const { EMAIL_USER } = process.env;
 
   const message = {
     from: {
@@ -102,6 +118,8 @@ async function sendOtpEmail(email, code) {
   };
 
   await transporter.sendMail(message);
+
+  return { delivered: true };
 }
 
 /**
@@ -109,22 +127,35 @@ async function sendOtpEmail(email, code) {
  */
 async function issueOtp(email) {
   const code = generateOtp();
+  const fallbackAllowed = shouldAllowFallback();
+  let delivery = { delivered: true };
 
   try {
     clearOtp(email);
-    await sendOtpEmail(email, code);
+    delivery = await sendOtpEmail(email, code);
   } catch (error) {
     clearOtp(email);
-    throw error;
+    if (!fallbackAllowed) {
+      throw error;
+    }
+
+    console.warn('OTP delivery failed, but fallback mode is enabled:', error.message);
+    delivery = {
+      delivered: false,
+      reason: error.message || 'delivery-failed',
+      fallback: true
+    };
   }
 
   const expiresAt = persistOtp(email, code);
 
-  const exposeOtp = process.env.NODE_ENV === 'test' || process.env.EXPOSE_OTP_CODES === 'true';
+  const exposeOtp = process.env.NODE_ENV === 'test' || process.env.EXPOSE_OTP_CODES === 'true' || delivery.fallback;
 
   return {
     expiresAt,
-    code: exposeOtp ? code : undefined
+    code: exposeOtp ? code : undefined,
+    delivery,
+    fallback: Boolean(delivery.fallback)
   };
 }
 

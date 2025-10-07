@@ -98,6 +98,7 @@ Imagine you could see invisible "bad stuff" in the air around you - like dust, s
 - **Guest mode** - Try it without signing up
 - **Secure** - Your password is encrypted (scrambled so hackers can't read it)
 - **Email OTP challenge** - Login hand-off requires a 6-digit code sent via Outlook SMTP
+- **Fallback friendly** - Set `ALLOW_OTP_FALLBACK=true` to keep logins working when SMTP isn’t configured (OTP appears in the API response)
 
 ### 📈 Smart Features
 - **Real-time updates** - Data refreshes automatically
@@ -231,6 +232,7 @@ BCRYPT_SALT_ROUNDS=12
 EMAIL_USER=your_outlook_email@example.com
 EMAIL_PASS=your_outlook_password_or_app_password
 EXPOSE_OTP_CODES=false
+ALLOW_OTP_FALLBACK=true
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=100

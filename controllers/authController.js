@@ -88,6 +88,19 @@ exports.login = async (req, res) => {
       email: normalizedEmail
     });
 
+    if (otpResult.fallback) {
+      const token = generateToken(user);
+      return res.json({
+        message: 'Email delivery unavailable. Logged in using OTP fallback mode—configure SMTP to re-enable verification.',
+        otpRequired: false,
+        fallback: true,
+        delivery: otpResult.delivery,
+        ...(suggestion ? { emailSuggestion: suggestion } : {}),
+        token,
+        user: buildTokenPayload(user)
+      });
+    }
+
     const response = {
       message: 'OTP sent to your email address',
       otpRequired: true,
