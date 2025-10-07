@@ -85,6 +85,7 @@ app.use((err, req, res, next) => {
 const authRoutes = require('./routes/authRoutes');
 const pollutionRoutes = require('./routes/pollutionRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const otpRoutes = require('./routes/otpRoutes');
 
 // Health check - respond even if database is not connected
 app.get('/health', (req, res) => {
@@ -100,6 +101,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/pollution', pollutionRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api', otpRoutes);
 
 // Legacy routes for backward compatibility - redirect to pollution routes
 app.get('/api/cities/count', async (req, res) => {

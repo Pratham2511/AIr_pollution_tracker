@@ -85,10 +85,7 @@ exports.login = async (req, res) => {
     }
 
     const otpResult = await generateAndDeliverOtp({
-      email: normalizedEmail,
-      userId: user.id,
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent')
+      email: normalizedEmail
     });
 
     const response = {

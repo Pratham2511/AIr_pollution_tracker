@@ -97,6 +97,7 @@ Imagine you could see invisible "bad stuff" in the air around you - like dust, s
 - **Create an account** - Save your favorite cities
 - **Guest mode** - Try it without signing up
 - **Secure** - Your password is encrypted (scrambled so hackers can't read it)
+- **Email OTP challenge** - Login hand-off requires a 6-digit code sent via Outlook SMTP
 
 ### 📈 Smart Features
 - **Real-time updates** - Data refreshes automatically
@@ -227,11 +228,16 @@ DB_POOL_MAX=5
 JWT_SECRET=your_super_secret_key
 JWT_EXPIRY=24h
 BCRYPT_SALT_ROUNDS=12
+EMAIL_USER=your_outlook_email@example.com
+EMAIL_PASS=your_outlook_password_or_app_password
+EXPOSE_OTP_CODES=false
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=100
 PORT=10000
 ```
+
+> **SMTP on Render:** Outlook/Hotmail SMTP works over TLS on `smtp.office365.com:587`. If you use multi-factor authentication, create an app password and supply it via `EMAIL_PASS`. Render automatically provides HTTPS termination so the API endpoints remain secure.
 
 ### 🔐 Security & Access Rules
 
