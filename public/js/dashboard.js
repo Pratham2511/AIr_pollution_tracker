@@ -12,6 +12,26 @@ const state = {
   markerRenderToken: null,
 };
 
+const getEmptyOverview = () => ({
+  cities: [],
+  averagePollutants: {
+    pm25: 0,
+    pm10: 0,
+    co: 0,
+    no2: 0,
+    so2: 0,
+    o3: 0,
+  },
+  categoryDistribution: {},
+  regionalCorrelation: [],
+  rankings: {
+    worst: null,
+    best: null,
+    mostImproved: [],
+  },
+  threeDayAggregateChange: [],
+});
+
 const showSkeleton = (id) => {
   const el = document.getElementById(id);
   if (!el) return;
@@ -882,16 +902,34 @@ const attachGlobalListeners = () => {
 };
 
 const hydrateOverview = async () => {
-  const data = await API.fetch('/api/analytics/overview');
-  state.overview = data;
+  let fallbackUsed = false;
+
+  try {
+    const data = await API.fetch('/api/analytics/overview');
+    state.overview = data && typeof data === 'object' ? { ...getEmptyOverview(), ...data } : getEmptyOverview();
+  } catch (error) {
+    fallbackUsed = true;
+    console.warn('Overview analytics unavailable, falling back to empty dataset:', error);
+    state.overview = getEmptyOverview();
+  }
+
   const updatedAt = document.getElementById('overviewUpdatedAt');
   if (updatedAt) {
     updatedAt.textContent = `Updated ${new Date().toLocaleString()}`;
   }
+
   renderOverviewCards();
   renderOverviewTrend();
   renderCategoryDistribution();
   renderRegionalLeaders();
+
+  if (fallbackUsed) {
+    showToast('Analytics data will populate once available. Showing cached layout for now.', {
+      variant: 'warning',
+      title: 'Analytics offline',
+      duration: 7000,
+    });
+  }
 };
 
 const hydrateCities = async () => {

@@ -1,611 +1,196 @@
-# 🌫️ AIRLYTICS - Air Pollution Tracker
+<br>
 
-> **A simple, beautiful website that shows how clean or dirty the air is in different Indian cities!**
+# Airlytics – Air Pollution Tracker
 
-This is a full-stack web application for tracking and analyzing air pollution data across major Indian cities with real-time monitoring, interactive maps, and health recommendations.
-
----
-
-## Tech Stack
-
-
-
-## 🎯 What Is This? 
-
-- Node.js
-
-- Express.js
-
-Imagine you could see invisible "bad stuff" in the air around you - like dust, smoke, and chemicals. That's what this website does! - PostgreSQL
-
-- Sequelize ORM
-
-**Think of it like a weather app, but instead of telling you if it's sunny or rainy, it tells you if the air is clean or dirty! ☁️✨**- JWT for authentication
-
-- bcrypt for password hashing
-
-### Why Should I Care?
-
-- 🏃 **Health**: Bad air can make you cough, give you headaches, or make it hard to breathe## Features
-
-- 🎮 **Playing Outside**: Know when it's safe to play sports outdoors
-
-- 🚗 **Your City**: See how clean YOUR city's air is compared to others- User registration and authentication with JWT
-
-- 📊 **Cool Data**: Watch charts and graphs change in real-time (like a video game score!)- CRUD operations for pollution data
-
-- Admin role management
-
----- Input validation and error handling
-
-- Rate limiting for security
-
-## ✨ What Can You Do With This Website?- Pagination and filtering for pollution data
-
-- Public endpoint for latest pollution data by city
-
-### 1. 👀 **Track Cities**
-
-- See air quality for 50+ Indian cities (Delhi, Mumbai, Bangalore, and more!)## Prerequisites
-
-- Add your favorite cities to watch
-
-- Get colors: 🟢 Green = Good Air, 🔴 Red = Bad Air- Node.js (v18 or higher)
-
-- PostgreSQL
-
-### 2. 🗺️ **Interactive Map**- npm
-
-- Click on cities on a cool map
-
-- See pollution levels instantly## Setup Instructions
-
-- Zoom in and out like Google Maps!
-
-### 1. Clone the Repository
-
-### 3. 📊 **Charts & Graphs**
-
-- See **bar charts** comparing different cities```bash
-
-- Watch pollution change over timegit clone <repository-url>
-
-- Compare two cities side-by-sidecd air-pollution-tracker-backend
-
-
-### 4. 🔮 **3-Day Forecast**
-- Predict air quality for the next 3 days
-- Like a weather forecast, but for air!
-- Plan when to play outside safely
-
-### 5. 📱 **Works Everywhere**
-- On your computer 💻
-- On your phone 📱
-- On your tablet 📋
+Airlytics is a full-stack experience that helps people understand the air they breathe. It blends a glassmorphic landing page, an interactive Tailwind-powered dashboard, rich analytics, and a callable API into a single deployment-ready project that targets Indian cities first but adapts to any region.
 
 ---
 
-## 🎨 Cool Features
+## Why this project exists
 
-### 🌈 Beautiful Design
-- **Glassmorphism** - Fancy word for see-through, glassy cards that look super modern
-- **Smooth Animations** - Everything moves smoothly when you click
-- **Color Gradients** - Beautiful rainbow-like colors that slowly change
-- **Dark Mode** - Easy on your eyes at night 🌙
-
-### 🔐 Login System
-- **Create an account** - Save your favorite cities
-- **Guest mode** - Try it without signing up
-- **Secure** - Your password is encrypted (scrambled so hackers can't read it)
-- **Email OTP challenge** - Login hand-off requires a 6-digit code sent via Outlook SMTP
-- **Fallback friendly** - Set `ALLOW_OTP_FALLBACK=true` to keep logins working when SMTP isn’t configured (OTP appears in the API response)
-
-### 📈 Smart Features
-- **Real-time updates** - Data refreshes automatically
-- **City comparison** - See which city has cleaner air
-- **Historical data** - See how air quality changed over the last 3 days
-- **Trend indicators** - ⬆️ Getting worse or ⬇️ Getting better
+- Make invisible pollution visible with an approachable user interface.
+- Give families, students, and city planners fast answers: How bad is the air right now, is it getting better, and what should we do next?
+- Provide developers with a reference implementation that demonstrates authentication hardening, rate-limiting, analytics aggregation, and Render-friendly deployment practices.
 
 ---
 
-## 🧪 What Air Pollution Stuff Does It Track?
+## What you get at a glance
 
-### The 6 Bad Things in Air:
-
-1. **PM2.5** 🔬
-   - Super tiny particles (smaller than a grain of sand)
-   - From cars, factories, and smoke
-   - The most dangerous one!
-
-2. **PM10** 💨
-   - Slightly bigger particles (still super small!)
-   - From dust and construction
-   - Can get in your lungs
-
-3. **NO₂** (Nitrogen Dioxide) 🚗
-   - Gas from car exhaust
-   - Brown-colored air pollution
-   - Makes it hard to breathe
-
-4. **SO₂** (Sulfur Dioxide) 🏭
-   - From factories and power plants
-   - Smells like rotten eggs (yuck!)
-   - Can cause acid rain
-
-5. **CO** (Carbon Monoxide) ⚠️
-   - Invisible, odorless gas
-   - From burning stuff
-   - Very dangerous in high amounts
-
-6. **O₃** (Ozone) ☀️
-   - Good high in the sky, bad down here
-   - Forms on hot, sunny days
-   - Makes your eyes water
-
-### 🎯 AQI Score (Air Quality Index)
-Think of it like a video game health bar for your city:
-
-- 🟢 **0-50**: GOOD - Go play outside! Perfect air!
-- 🟡 **51-100**: MODERATE - Pretty okay, sensitive people be careful
-- 🟠 **101-150**: UNHEALTHY (Sensitive) - Kids with asthma should stay inside
-- 🔴 **151-200**: UNHEALTHY - Everyone should limit outdoor time
-- 🟣 **201-300**: VERY UNHEALTHY - Stay inside if possible!
-- 🟤 **301+**: HAZARDOUS - Don't go outside! Serious danger!
+- **Immersive UI** – Landing and dashboard screens with animated gradients, cards, theming, and responsive layouts that scale from phones to desktops.
+- **Actionable analytics** – Aggregated AQI history, pollutant breakdowns, region comparisons, and three-day trend forecasting generated server-side.
+- **Secure authentication** – Email + password login with Outlook SMTP OTP challenge, guest access for try-before-you-sign-up, JWT-based sessions, and password hardening rules.
+- **Performance-minded backend** – Express with gzip compression, trust-proxy support, configurable CORS, retry-friendly database initialization, and health checks tuned for Render.
+- **Test coverage** – Jest and Supertest suites exercising authentication, analytics overviews, and key middleware logic.
 
 ---
 
-## 🚀 How To Use It
+## Architecture snapshot
 
-### For Regular Users:
+- **Client**
+  - Static assets served from the `public` directory (landing page, dashboard, guest funnel).
+  - Tailwind CSS compiled locally into a single minified bundle (`npm run build:css`).
+  - Leaflet maps, Chart.js visualizations, GSAP transitions, and custom scripts for guest onboarding.
 
-1. **Visit the Website** 🌐
-   - Open your web browser (Chrome, Firefox, Safari, etc.)
-   - Go to: `https://your-website-url.com`
+- **Server**
+  - Express 4 with modular routers for authentication, pollution data, analytics, and OTP verification.
+  - Middleware layer for rate limiting, validation, guest access scoping, and centralized error handling.
+  - Nodemailer-based SMTP integration that automatically falls back to in-response OTPs when credentials are missing.
 
-2. **Choose Your Adventure** 🎮
-   - **Register**: Create an account (saves your cities)
-   - **Login**: Already have an account? Sign in!
-   - **Guest**: Just want to look around? Click "Continue as Guest"
+- **Data layer**
+  - PostgreSQL in production, SQLite during tests. Sequelize models for Users, PollutionReadings, CityDailySummaries, TrackedCities, and OTP tokens.
+  - Seed scripts to populate cities and demo readings. Analytics service composes summaries, rankings, and trend indicators without raw SQL in application code.
 
-3. **Explore!** 🔍
-   - **Tracker Tab**: See your tracked cities
-   - **Map Tab**: Click on the map to explore
-   - **Analysis Tab**: See charts and compare cities
-   - **3-Day Forecast**: Plan ahead!
-
-4. **Add Cities** ➕
-   - Click on any city on the map
-   - Or search for your city
-   - Watch it appear in your list!
-
-5. **Remove Cities** ➖
-   - Don't want a city anymore?
-   - Click the red "Remove" button
-   - Poof! It's gone!
-
-### For Developers (People Who Build Websites):
-
-#### 🛠️ Tech Stack (Tools We Used)
-- **Frontend** (What you see):
-  - HTML, CSS, JavaScript
-  - Bootstrap 5 (makes it pretty)
-  - Chart.js (makes graphs)
-  - Leaflet (makes the map)
-  
-- **Backend** (The brain):
-  - Node.js (runs JavaScript on the server)
-  - Express (handles web requests)
-  - PostgreSQL (database to store data)
-  - Sequelize (talks to the database easily)
-
-- **Security**:
-  - JWT tokens (proves you're logged in)
-  - Bcrypt (scrambles passwords)
-  - Input validation (checks if data is safe)
-
-#### 📥 Installation Steps
-
-**Step 1: Download the Code**
-```bash
-git clone https://github.com/Pratham2511/Air-Pollution_Tracker.git
-cd Air-Pollution_Tracker
-```
-
-**Step 2: Install Dependencies** (All the tools needed)
-```bash
-npm install
-```
-
-**Step 3: Setup Environment** (Secret settings)
-Create a file called `.env` and add:
-```
-DATABASE_URL=your_postgresql_connection_string
-DB_HOST=your_database_host
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-DB_PORT=5432
-DB_POOL_MAX=5
-JWT_SECRET=your_super_secret_key
-JWT_EXPIRY=24h
-BCRYPT_SALT_ROUNDS=12
-EMAIL_USER=your_outlook_email@example.com
-EMAIL_PASS=your_outlook_password_or_app_password
-EXPOSE_OTP_CODES=false
-ALLOW_OTP_FALLBACK=true
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=100
-PORT=10000
-```
-
-> **SMTP on Render:** Outlook/Hotmail SMTP works over TLS on `smtp.office365.com:587`. If you use multi-factor authentication, create an app password and supply it via `EMAIL_PASS`. Render automatically provides HTTPS termination so the API endpoints remain secure.
-
-### 🔐 Security & Access Rules
-
-- **Password policy**
-   - Minimum 8 characters
-   - At least one uppercase, one lowercase, one number, and one special character
-   - Rejects passwords that include your name/email or match common leaked passwords
-- **Email normalization**: addresses are lowercased and trimmed before we store them, so duplicate sign-ups with different casing fail early.
-- **Guest mode limitations**
-   - Guests only receive the top 5 readings per page and simplified pollutant data.
-   - Protected endpoints (create/update/delete) remain locked—guests must register to access them.
-
-**Step 4: Setup Database**
-```bash
-npm run migrate    # Creates the database tables
-npm run seed       # Adds sample data
-```
-
-**Step 5: Run It!**
-```bash
-npm start
-```
-
-**Step 6: Open Your Browser**
-Go to: `http://localhost:3000`
+- **Infrastructure**
+  - Deployable on Render via `render.yaml`. Build pipeline now installs development dependencies, compiles Tailwind, and prunes before release (`npm ci && npm run build && npm prune --omit=dev`).
+  - `.nvmrc` targets Node 20 on the platform while package engines vector toward Node 18 locally.
 
 ---
 
-## ☁️ Deploying on Render
+## User experience highlights
 
-1. **Create the services**
-   - Provision a *Web Service* from this repository (Node runtime).
-   - Provision a *PostgreSQL* instance (Render Free tier works for trials).
-
-2. **Configure environment variables (Render Dashboard → Environment)**
-   - `DATABASE_URL` – copy the External URL from the Render PostgreSQL page.
-   - `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` – also available on the database dashboard.
-   - `JWT_SECRET` – generate a strong secret; do **not** commit it.
-   - `BCRYPT_SALT_ROUNDS` – keep at `12` unless you need quicker hashes.
-   - `ALLOWED_ORIGINS` – comma-separated list of allowed front-end origins (e.g. `https://your-app.onrender.com`).
-   - Optional: `DB_POOL_MAX` to adjust the Sequelize pool (defaults to `5`, matching Render Free limits).
-
-3. **Build & start commands**
-   - The service uses `npm ci --omit=dev && npm run build` during build.
-   - Runtime command is `npm start`, which binds to the `PORT` Render injects.
-
-4. **Database migrations**
-   - Run `npm run migrate` against the Render database once (from Render shell or your local machine with the same `DATABASE_URL`).
-   - Optionally execute `npm run seed` if you want demo pollution data.
-
-5. **Free tier heads-up**
-   - Free Postgres instances have low connection limits; this project caps the pool at five connections to avoid errors.
-   - Sleeping services can take ~50s to wake; expect a slow first request.
-   - Render deletes free databases on the listed expiry date, so upgrade or back up before then.
+- **Landing journey** – A story-driven page that explains the problem, sells the solution, and guides visitors toward login, guest preview, or data exploration.
+- **Dashboard** – Cards, charts, and maps update automatically; tracked cities persist in local storage; guest prompts nudge visitors to register without blocking access.
+- **Accessibility** – Semantic landmarks, ARIA labels on interactive cards, focus-visible states, and text contrast tuned for glassmorphism backgrounds.
 
 ---
 
-## 🗂️ Project Structure (Where Everything Lives)
+## Security and resilience
 
-```
-📦 Air-Pollution-Tracker/
-│
-├── 📁 public/                    # Frontend files (what users see)
-│   ├── 📁 styles/                # CSS files (makes it pretty)
-│   │   ├── landing.css           # Login page styles
-│   │   ├── main.css              # Main dashboard styles
-│   │   ├── dashboard.css         # City card styles
-│   │   └── common.css            # Shared styles
-│   │
-│   ├── 📁 data/                  # City data
-│   │   └── cities.js             # 50 Indian cities with coordinates
-│   │
-│   ├── index.html                # Main dashboard page
-│   └── landing.html              # Login/Register page
-│
-├── 📁 models/                    # Database blueprints
-│   ├── User.js                   # User accounts
-│   ├── PollutionData.js          # Pollution measurements
-│   └── index.js                  # Connects all models
-│
-├── 📁 migrations/                # Database setup instructions
-│   └── *.js                      # Files to create tables
-│
-├── 📁 controllers/               # Logic handlers
-│   ├── authController.js         # Login/Register logic
-│   └── pollutionController.js    # Pollution data logic
-│
-├── 📁 middleware/                # Helper functions
-│   ├── auth.js                   # Checks if you're logged in
-│   └── validation.js             # Makes sure data is safe
-│
-├── 📁 routes/                    # URL paths
-│   ├── authRoutes.js             # /api/auth/* paths
-│   └── pollutionRoutes.js        # /api/pollution/* paths
-│
-├── server.js                     # Main brain of the app
-├── package.json                  # List of tools needed
-└── README.md                     # This file!
-```
+- Passwords must be long, complex, and free from personal information. The validator rejects breached and trivial combinations.
+- JWT secrets default to a clear warning so production deploys must set `JWT_SECRET` explicitly.
+- Rate limiting guards both authentication and general API surfaces, with higher ceilings for analytical endpoints.
+- OTP delivery defaults to Outlook SMTP; fallback mode keeps demos working by surfacing the OTP in API responses only when explicitly permitted.
+- Health endpoint responds even when the database is still connecting, so Render can complete health checks during cold starts.
 
 ---
 
-## 🎓 How It Works (Simple Explanation)
+## Environment reference
 
-### 1. **You Visit the Website** 🌐
-   - Your browser asks the server: "Show me the website!"
-   - Server sends back HTML, CSS, and JavaScript
+Configure these environment variables before running or deploying. Describe them in human language to keep this document code-free:
 
-### 2. **You Login** 🔐
-   - You type email and password
-   - Server checks if they match
-   - Server gives you a special "token" (like a movie ticket)
-   - Browser saves the token
-
-### 3. **You See Cities** 🏙️
-   - JavaScript loads city data from `cities.js`
-   - Creates colorful cards for each city
-   - Shows pollution numbers and colors
-
-### 4. **You Click on Map** 🗺️
-   - Map shows 50 cities with markers
-   - Click a marker → Get pollution info
-   - Add to your list if you want!
-
-### 5. **You See Charts** 📊
-   - JavaScript uses Chart.js library
-   - Grabs city data from localStorage
-   - Draws beautiful bar graphs
-   - Updates when you add/remove cities
-
-### 6. **You Get Forecast** 🔮
-   - Takes last 3 days of data
-   - Uses simple math to predict next 3 days
-   - Shows in cards with trend arrows
+- **DATABASE_URL** (or DB_HOST/DB_NAME/DB_USER/DB_PASSWORD) – points Sequelize to your PostgreSQL instance.
+- **DB_PORT** and **DB_POOL_MAX** – shape the connection pool; defaults align with Render’s free tier limits.
+- **JWT_SECRET** – required for token signing; store securely.
+- **JWT_EXPIRY** – token lifetime (defaults to twenty-four hours).
+- **BCRYPT_SALT_ROUNDS** – password hashing cost factor (twelve is a good balance).
+- **EMAIL_USER** and **EMAIL_PASS** – Outlook/Hotmail SMTP credentials or app password.
+- **ALLOW_OTP_FALLBACK** – set to true for demos without SMTP; set to false in production to enforce email delivery.
+- **EXPOSE_OTP_CODES** – only enable in automated tests; otherwise leave false.
+- **ALLOWED_ORIGINS** – comma-separated list of trusted front-end origins.
+- **PORT** – listening port; Render injects one automatically.
 
 ---
 
-## 🔑 Important Concepts (Explained Simply)
+## Getting started locally (no code blocks required)
 
-### 🍪 localStorage
-- Like a small notebook in your browser
-- Remembers your tracked cities
-- Stays even when you close the browser
-- Can store about 5-10MB of data
-
-### 🎫 JWT Token
-- Like a movie ticket that proves you paid
-- Server gives it to you when you login
-- You show it with every request
-- Expires after 24 hours (like a day pass)
-
-### 🗄️ Database
-- Like a giant spreadsheet in the cloud
-- Stores all user accounts
-- Stores pollution readings
-- PostgreSQL = Type of database we use
-
-### 🔒 Encryption
-- Scrambles your password so hackers can't read it
-- "password123" becomes "sdh872hd*&H*d87"
-- Only works one way (can't unscramble!)
-
-### 📡 API (Application Programming Interface)
-- Like a waiter at a restaurant
-- You tell the waiter what you want (request)
-- Waiter brings it from the kitchen (server)
-- You get your food (response data)
+1. Install Node.js 18 or later together with npm 9 or later.
+2. Install PostgreSQL (or use the embedded SQLite workflow for tests).
+3. Clone the repository and move into the project directory using your preferred Git workflow.
+4. Install dependencies by running npm install inside the project directory.
+5. Build the Tailwind stylesheet through npm run build:css so the dashboard can load its styles.
+6. Create a `.env` file and populate the environment variables described above.
+7. Apply database migrations with npm run migrate, then seed demo data with npm run seed if you want immediate sample readings.
+8. Start the server with npm start (production-style) or npm run dev (nodemon-powered development loop).
+9. Visit the landing page at http://localhost:10000/ and the dashboard at http://localhost:10000/dashboard.
 
 ---
 
-## 🐛 Troubleshooting (When Things Go Wrong)
+## Testing and quality gates
 
-### Problem: "Nothing shows up on the page!"
-**Solution:**
-1. Open browser console (Press F12)
-2. Look for red error messages
-3. Try refreshing the page (Ctrl + R)
-4. Clear browser cache and try again
-
-### Problem: "Login doesn't work!"
-**Solution:**
-1. Make sure email is valid (has @ and .com)
-2. Password must be at least 6 characters
-3. Check if you registered first
-4. Try clearing localStorage: `localStorage.clear()`
-
-### Problem: "Map is not loading!"
-**Solution:**
-1. Check your internet connection
-2. Make sure Leaflet library loaded (check console)
-3. Try refreshing the page
-4. Check if browser blocks location access
-
-### Problem: "Charts are invisible!"
-**Solution:**
-1. Add at least 1 city first
-2. Go to Analysis tab
-3. Wait 2 seconds for charts to load
-4. Check if Chart.js library loaded
+- Run npm test to execute the Jest suite; it uses an isolated SQLite database and fakes SMTP delivery.
+- Linting is handled implicitly by standardized formatting within the repo; integrate ESLint or Prettier as a future enhancement if team conventions require it.
+- Tailwind assets should be rebuilt (npm run build:css) whenever you update classes in `public/styles/tailwind.input.css`.
+- Database migrations are idempotent; re-run npm run migrate after changing schema definitions to keep environments aligned.
 
 ---
 
-## 🎉 Fun Facts About This Project
+## Deploying on Render
 
-- 📊 **50+ Cities**: Tracks pollution in over 50 Indian cities
-- 🎨 **Glassmorphism**: Uses the latest design trend from 2024
-- 🔐 **Secure**: Bank-level encryption for passwords
-- 📱 **Responsive**: Works on screens from 320px to 4K!
-- 🚀 **Fast**: Page loads in under 2 seconds
-- 🌈 **Colorful**: Uses 6 different color gradients
-- 💾 **Lightweight**: Entire website is less than 5MB
+1. Create a new Web Service on Render and point it to this repository. Select the Node runtime.
+2. Provision a PostgreSQL instance on Render (the free tier works for demos) and copy the External URL into your service as DATABASE_URL. Mirror the host, port, user, and password variables if you prefer the expanded configuration.
+3. Add all required environment variables from the earlier checklist, including JWT secrets and SMTP credentials. Leave ALLOW_OTP_FALLBACK enabled only if you are comfortable exposing fallback OTPs in API responses.
+4. Render executes the build command specified in `render.yaml`: install all dependencies, compile Tailwind, then prune development-only packages to reduce runtime size.
+5. The start command launches the Express server in production mode. Render’s health check hits `/health`; once it returns OK the service is live.
+6. Open a shell on the running instance (Render Dashboard → Shell) and execute npm run migrate once to create the tables. Optionally run npm run seed to load demo data.
 
----
-
-## 🤝 Contributing (Want to Help?)
-
-### For Beginners:
-1. **Report Bugs**: Found something broken? Tell us!
-2. **Suggest Features**: Have a cool idea? Share it!
-3. **Fix Typos**: See a spelling mistake? Fix it!
-
-### For Developers:
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/AmazingFeature`)
-3. Make your changes
-4. Commit (`git commit -m 'Add some AmazingFeature'`)
-5. Push (`git push origin feature/AmazingFeature`)
-6. Open a Pull Request
+If you previously used `npm ci --omit=dev`, update your service configuration or redeploy so the new build command takes effect; this change prevents Tailwind from going missing during builds and eliminates the 502 errors reported by Render.
 
 ---
 
-## 📝 License
+## Data lifecycle
 
-This project is **open source** - that means anyone can use it, change it, and share it!
-
----
-
-## 🙏 Credits & Thanks
-
-### Libraries Used:
-- **Bootstrap** - Made it pretty
-- **Chart.js** - Drew the graphs
-- **Leaflet** - Created the map
-- **Express** - Ran the server
-- **Sequelize** - Talked to database
-
-### Data Sources:
-- City coordinates from OpenStreetMap
-- Sample pollution data (in real app, would use API)
-
-### Created By:
-**Pratham** 👨‍💻
-- GitHub: [@Pratham2511](https://github.com/Pratham2511)
-- Project: Air Pollution Tracker
+- **Static city metadata** lives in `public/data/cities.js` and the `cities` table populated via seeders.
+- **Pollution readings** are seeded for demos. The `PollutionReading` model supports full CRUD and links to both `User` and `City` records.
+- **City daily summaries** power analytics charts. The service layer aggregates averages, regional comparisons, and rolling trends directly in JavaScript so that deployments without database functions still work.
+- **Materialized view refresh** endpoint attempts to call a Postgres stored procedure (`refresh_city_pollution_analytics`). Provide that function in production if you want real-time recomputation; otherwise the call is safely skipped.
 
 ---
 
-## 📞 Need Help?
+## Observability and operations
 
-- 🐛 **Found a bug?** Open an issue on GitHub
-- 💡 **Have a question?** Check the FAQ below
-- 🤝 **Want to contribute?** Read the Contributing section
-- 📧 **Email support?** Contact the developer
-
----
-
-## 🎯 Future Plans (What's Coming Next!)
-
-- [ ] **Real API Integration** - Get live data from government sensors
-- [ ] **More Cities** - Add 100+ more Indian cities
-- [ ] **Notifications** - Alert when air quality gets bad
-- [ ] **Mobile App** - Native iOS and Android apps
-- [ ] **Health Tips** - Suggestions based on air quality
-- [ ] **Social Features** - Share reports with friends
-- [ ] **Historical Trends** - See pollution over months/years
-- [ ] **Weather Integration** - Show weather + pollution together
+- Server logs clearly mark database status, CORS origins, and warnings about insecure defaults.
+- A keep-alive interval re-authenticates every thirty seconds to detect dropped database connections and restart the connection logic without knocking the service offline.
+- Compression and JSON body limits keep response sizes low and guard against payload abuse.
+- Static files are served with cache-busting headers for HTML while letting CSS and JS be cached by the browser.
 
 ---
 
-## 🎓 What You Can Learn From This Project
+## Features available today
 
-### If you're a beginner:
-- ✅ How websites work (frontend + backend)
-- ✅ How to style with CSS (make things pretty)
-- ✅ How to use JavaScript (make things interactive)
-- ✅ How databases work (storing data)
-- ✅ How authentication works (login systems)
-- ✅ How APIs work (talking to servers)
-
-### If you're intermediate:
-- ✅ Modern design patterns (glassmorphism)
-- ✅ State management (localStorage)
-- ✅ Data visualization (charts)
-- ✅ Responsive design (mobile-first)
-- ✅ Security best practices (encryption)
-- ✅ Database design (relations)
-
-### If you're advanced:
-- ✅ Full-stack architecture
-- ✅ ORM usage (Sequelize)
-- ✅ Middleware patterns
-- ✅ JWT authentication
-- ✅ Deployment strategies
-- ✅ Performance optimization
+- Guest mode with guardrails (limited pagination, truncated payloads) and a fast “random city” API that powers the landing marquee.
+- Authenticated dashboard experience with tracked cities stored locally, interactive map selection, and an analytics overview that gracefully falls back when data is sparse.
+- OTP-secured login flow that returns helpful diagnostics about SMTP delivery state, plus email typo suggestions during login.
+- Admin-ready CRUD endpoints for pollution readings, protected by role checks and validation middleware.
+- Rate-limited analytics endpoints (`/api/analytics/...`) that deliver filtered city lists, detail views, and aggregated insights for the frontend visualizations.
 
 ---
 
-## 🌟 Show Your Support!
+## Features present in code but not fully surfaced yet
 
-If you like this project:
-- ⭐ **Star this repo** on GitHub
-- 🐛 **Report bugs** to help improve it
-- 💡 **Suggest features** for future versions
-- 📢 **Share it** with your friends
-- 🤝 **Contribute** code or documentation
+- **Tracked city persistence** – Database models, migrations, and associations exist, but the current UI still stores tracked cities in the browser. Expose the corresponding API endpoints and sync logic to persist selections server-side.
+- **Pollution reading management UI** – The backend exposes create, update, and delete routes with validation and admin authorization, yet the dashboard does not surface forms or controls for these actions.
+- **Materialized analytics refresh** – The `/api/analytics/refresh` endpoint expects a database function named `refresh_city_pollution_analytics`. Implement that function or replace it with a background job to generate fresh summaries.
+- **OTP token persistence** – There is an `OtpToken` model ready for long-lived token storage. The current implementation keeps OTPs in-memory; migrate to persistent storage if you need shared or multi-instance deployments.
+- **Health advice granularity** – `services/healthAdvisor.js` prepares nuanced recommendations per pollutant, but the frontend currently surfaces only the primary message.
 
----
-
-## 📸 Screenshots
-
-### Landing Page
-Beautiful glassmorphic login page with animated gradients
-
-### Dashboard
-Clean, modern city cards showing real-time pollution data
-
-### Interactive Map
-Click on any city to see detailed pollution information
-
-### Analysis Charts
-Compare pollution levels across multiple cities
-
-### 3-Day Forecast
-Predict future air quality to plan your activities
+Documenting these unfinished threads helps future contributors pick them up without reverse-engineering the codebase.
 
 ---
 
-## 💬 Frequently Asked Questions (FAQ)
+## Roadmap and stretch ideas
 
-**Q: Is this free to use?**  
-A: Yes! Completely free and open source.
-
-**Q: Do I need to know coding to use it?**  
-A: Nope! Just open the website and click around.
-
-**Q: Is my data safe?**  
-A: Yes! Passwords are encrypted and we don't share your data.
-
-**Q: Can I use it on my phone?**  
-A: Absolutely! Works great on phones, tablets, and computers.
-
-**Q: Is the pollution data real?**  
-A: Currently uses sample data. Real version would connect to government APIs.
-
-**Q: Can I add my own city?**  
-A: Not yet, but it's on our future plans list!
-
-**Q: Why does my password need 6 characters?**  
-A: For security! Longer passwords are harder to hack.
-
-**Q: What's Guest mode?**  
-A: Try the website without creating an account, but you can't save cities.
+- Connect to real-time government or third-party AQI feeds instead of relying on seeded data.
+- Expand the geography beyond India and add localized content for each region.
+- Deliver push notifications or email digests when AQI crosses critical thresholds.
+- Build a native mobile companion and reuse the API for data access.
+- Layer in historical trend analysis over months or years, backed by archival tables.
 
 ---
 
-**Made with ❤️ by Pratham**  
-**Last Updated: October 2025**
+## How to contribute
 
-🌫️ *Remember: Clean air is a right, not a privilege!* 🌫️
+1. Log bugs or enhancement ideas in the issue tracker so they can be triaged.
+2. Fork the repository, branch off `main`, and commit focused changes. Follow conventional commit messages if you plan to automate releases.
+3. Include unit tests or snapshot updates when you modify backend behavior.
+4. Run npm test and npm run build locally before opening a pull request. Share build output in the PR description to speed up review.
+5. Document UI or API changes in this README to keep deployment consumers informed.
+
+---
+
+## Credits
+
+- Concept and development: **Pratham** (GitHub: @Pratham2511)
+- Visual inspiration: modern glassmorphism design systems and Tailwind UI patterns.
+- Open-source libraries: Express, Sequelize, Chart.js, Leaflet, GSAP, Nodemailer, Tailwind CSS.
+
+---
+
+## Support and contact
+
+- Open GitHub issues for bugs, deployment questions, or enhancement requests.
+- For private outreach, use the email address configured in the project maintainer’s profile.
+- Keep an eye on the Render dashboard for operational insights; the health check endpoint is `/health`.
+
+---
+
+Clean air should be accessible knowledge. Airlytics turns data into decisions—thanks for helping it grow.

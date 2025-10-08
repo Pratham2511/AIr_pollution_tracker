@@ -94,8 +94,10 @@ exports.getOverview = async (req, res) => {
       : undefined;
 
     const overview = await analyticsService.buildOverallAnalytics(parsedIds);
+
     if (!overview) {
-      return res.status(404).json({ message: 'No analytics overview available' });
+      console.warn('Analytics overview unavailable, serving fallback payload.');
+      return res.json(analyticsService.createEmptyOverview());
     }
 
     res.json(overview);

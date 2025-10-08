@@ -13,7 +13,7 @@ const average = (values = []) => {
 
 const sum = (values = []) => values.reduce((total, value) => total + value, 0);
 
-const buildEmptyOverview = () => ({
+const createEmptyOverview = () => ({
   cities: [],
   averagePollutants: {
     pm25: 0,
@@ -153,7 +153,7 @@ const buildOverallAnalytics = async (cityIds) => {
   });
 
   if (!cities.length) {
-    return buildEmptyOverview();
+    return createEmptyOverview();
   }
 
   const cityIdsForSummaries = cities.map(city => city.id);
@@ -268,5 +268,6 @@ const buildOverallAnalytics = async (cityIds) => {
 
 module.exports = {
   getCityAnalytics,
-  buildOverallAnalytics
+  buildOverallAnalytics,
+  createEmptyOverview
 };
