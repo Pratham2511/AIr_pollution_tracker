@@ -8,7 +8,7 @@ AIr Pollution Tracker is an application designed to monitor and analyze air qual
 - **Backend**: Node.js, Express
 - **Database**: MongoDB
 - **APIs**: OpenWeatherMap API, AirQuality API
-- **Deployment**: Docker, Heroku/AWS
+- **Deployment**: Docker, Render
 - **Testing**: Jest, Mocha
 
 ## Setup Instructions
@@ -103,8 +103,8 @@ AIr_pollution_tracker/
    docker run -p 3000:3000 air-pollution-tracker
    ```
 
-3. **Deploy on Heroku/AWS**:
-   Follow the respective documentation for deploying a Node.js application.
+3. **Deploy on Render**:
+   Follow the Render documentation for deploying a Node.js application.
 
 ## Troubleshooting
 - **Common Issues**:
